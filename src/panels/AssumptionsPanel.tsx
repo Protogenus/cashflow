@@ -85,7 +85,7 @@ export function AssumptionsPanel() {
               </div>
             </div>
             <div className="flex gap-1" role="group" aria-label="Forecast horizon">
-              {[30, 60, 90].map((h) => (
+              {[30, 60, 90, 180].map((h) => (
                 <button
                   key={h}
                   className={`cf-btn px-3 py-1 text-xs ${settings.horizonDaysDefault === h ? 'cf-btn-primary' : ''}`}

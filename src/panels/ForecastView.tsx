@@ -23,7 +23,7 @@ import { useAssumptionsStore } from '../store/assumptionsStore';
 import { currencySymbol, formatDateLong, formatDateShort, formatMoney, formatMoneyWhole } from '../lib/format';
 import { DISCLAIMER_SHORT } from './AssumptionsPanel';
 
-const HORIZONS = [30, 60, 90];
+const HORIZONS = [30, 60, 90, 180];
 
 function axisMoney(v: number): string {
   const sym = currencySymbol();

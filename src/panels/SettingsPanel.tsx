@@ -234,7 +234,7 @@ export function SettingsPanel() {
           blurb="Your preferred projection length; also applied to the current plan."
           control={
             <div className="flex gap-1" role="group" aria-label="Default forecast horizon">
-              {[30, 60, 90].map((h) => (
+              {[30, 60, 90, 180].map((h) => (
                 <button
                   key={h}
                   className={`cf-btn px-3 py-1 text-xs ${settings.horizonDaysDefault === h ? 'cf-btn-primary' : ''}`}
