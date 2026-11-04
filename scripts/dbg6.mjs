@@ -1,0 +1,25 @@
+import { chromium } from '@playwright/test';
+import os from 'os';
+import path from 'path';
+
+const CHROME = path.join(os.homedir(), '.cache/ms-playwright/chromium-1248/chrome-linux64/chrome');
+const browser = await chromium.launch({ executablePath: CHROME });
+const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const logs = [];
+page.on('pageerror', (e) => logs.push('pageerror: ' + e.message));
+await page.goto('http://127.0.0.1:5173/');
+await page.getByLabel('Current balance in dollars').fill('2500');
+await page.getByRole('button', { name: 'Next' }).click();
+await page.getByLabel('Paycheck amount in dollars').fill('1850');
+await page.getByRole('button', { name: 'Next' }).click();
+await page.getByPlaceholder('1400').fill('1400');
+await page.getByRole('button', { name: 'Build my plan' }).click();
+await page.waitForTimeout(1000);
+console.log('dialogs:', await page.getByRole('dialog').count());
+console.log('nodes:', await page.locator('.react-flow__node').count());
+console.log('selected tab:', await page.evaluate(() => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent));
+const panel = await page.locator('[role="tabpanel"]').textContent();
+console.log('panel excerpt:', panel?.slice(0, 300).replace(/\s+/g, ' '));
+await page.screenshot({ path: '/tmp/dbg-ob.png' });
+console.log('logs:', logs.length ? logs : 'none');
+await browser.close();
