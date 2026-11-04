@@ -1,0 +1,22 @@
+import { chromium } from '@playwright/test';
+import os from 'os';
+import path from 'path';
+const CHROME = path.join(os.homedir(), '.cache/ms-playwright/chromium-1248/chrome-linux64/chrome');
+const browser = await chromium.launch({ executablePath: CHROME });
+const page = await browser.newPage({ viewport: { width: 375, height: 812 } });
+await page.goto('http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+await page.evaluate(() => localStorage.clear());
+await page.reload({ waitUntil: 'networkidle' });
+await page.getByRole('button', { name: 'Skip' }).click();
+await page.waitForTimeout(400);
+await page.getByRole('button', { name: 'Results' }).click();
+await page.waitForTimeout(600);
+// scroll the results panel so the chart x-axis is visible
+await page.evaluate(() => {
+  const chart = document.querySelector('.recharts-wrapper');
+  chart?.scrollIntoView({ block: 'end' });
+});
+await page.waitForTimeout(400);
+await page.screenshot({ path: '/tmp/xaxis-mob3.png' });
+await browser.close();
+console.log('ok');

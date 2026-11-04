@@ -245,8 +245,8 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
                   dataKey="date"
                   tickFormatter={(d: string) => formatDateShort(d as ISODate)}
                   tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                  interval={Math.floor(chart.data.length / 6)}
-                  minTickGap={8}
+                  interval={Math.max(1, Math.floor(chart.data.length / 5))}
+                  minTickGap={16}
                 />
                 <YAxis
                   tickFormatter={axisMoney}
@@ -258,7 +258,6 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
                   y={0}
                   stroke="var(--danger)"
                   strokeDasharray="4 4"
-                  label={{ value: '$0', fontSize: 11, fill: 'var(--danger)', position: 'insideTopRight' }}
                 />
                 <Line
                   type="monotone"

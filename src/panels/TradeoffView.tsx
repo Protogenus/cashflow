@@ -57,7 +57,7 @@ function MiniFan({ mc }: { mc: MonteCarloResult }) {
           dataKey="date"
           tickFormatter={(d: string) => formatDateShort(d)}
           tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
-          interval={Math.floor(data.length / 3)}
+          interval={Math.max(1, Math.floor(data.length / 3))}
           minTickGap={8}
         />
         <YAxis

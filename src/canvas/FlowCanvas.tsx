@@ -8,7 +8,6 @@ import {
   Background,
   BackgroundVariant,
   Controls,
-  MiniMap,
   ReactFlow,
   useReactFlow,
   type Connection,
@@ -179,7 +178,6 @@ export function FlowCanvas() {
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} />
       <Controls showInteractive={false} />
-      <MiniMap pannable zoomable />
     </ReactFlow>
   );
 }

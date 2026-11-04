@@ -50,7 +50,7 @@ function MiniChart({ scenario }: { scenario: Scenario }) {
           dataKey="date"
           tickFormatter={(d: string) => formatDateShort(d)}
           tick={{ fontSize: 10, fill: 'var(--text-muted)' }}
-          interval={Math.floor(data.length / 4)}
+          interval={Math.max(1, Math.floor(data.length / 4))}
           minTickGap={8}
         />
         <YAxis tickFormatter={axisMoney} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} width={44} />
@@ -223,24 +223,25 @@ export function ScenariosPanel() {
                     aria-label="Scenario name"
                   />
                 ) : (
-                  <span className="truncate text-xs font-semibold">
-                    {scn.name}
+                  <>
+                    <span className="min-w-0 flex-1 truncate text-xs font-semibold">
+                      {scn.name}
+                    </span>
                     {scn.isBaseline && (
-                      <span className="ml-1 rounded px-1 text-[10px]" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                      <span className="shrink-0 rounded px-1 text-[10px]" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
                         baseline
                       </span>
                     )}
-                  </span>
+                  </>
                 )}
               </button>
-              <label className="flex shrink-0 items-center gap-1 text-[10px]" style={{ color: 'var(--text-muted)' }} title="Include in comparison (up to 3)">
+              <label className="flex shrink-0 items-center text-[10px]" style={{ color: 'var(--text-muted)' }} title="Include in comparison (up to 3)">
                 <input
                   type="checkbox"
                   checked={inCompare}
                   onChange={() => toggleCompare(scn.id)}
                   aria-label={`Compare ${scn.name}`}
                 />
-                compare
               </label>
               <button
                 className="cf-btn shrink-0 px-1.5 text-[11px]"

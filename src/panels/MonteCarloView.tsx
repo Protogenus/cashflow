@@ -117,7 +117,7 @@ function FanChart({ result }: { result: MonteCarloResult }) {
             dataKey="date"
             tickFormatter={(d: string) => formatDateShort(d)}
             tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-            interval={Math.floor(data.length / 6)}
+            interval={Math.max(1, Math.floor(data.length / 5))}
             minTickGap={8}
           />
           <YAxis tickFormatter={axisMoney} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={52} />

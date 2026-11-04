@@ -67,9 +67,6 @@ body {
   background: transparent;
   color: var(--text-muted);
 }
-.cf-canvas .react-flow__minimap {
-  background: var(--surface-2) !important;
-}
 .cf-canvas .react-flow__controls {
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
 }

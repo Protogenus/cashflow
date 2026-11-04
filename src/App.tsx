@@ -352,7 +352,7 @@ export function App() {
               Based on your inputs — not financial advice.
             </p>
           </div>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex flex-wrap items-center gap-2">
             <ValidationBadge />
             <button className="cf-btn" onClick={undo} disabled={pastLen === 0} title="Undo (Ctrl+Z)">
               ↩ Undo

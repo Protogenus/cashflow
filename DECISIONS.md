@@ -169,3 +169,9 @@ Format for each entry:
 - **Context:** Each result view owned its Web Worker via useSimWorker, which terminated the worker on unmount. Switching result tabs unmounts the view — so clicking away mid-Monte-Carlo silently discarded the run (found during FINISH perf probing). The completion callback also died, leaving a remounted view stuck on "running" with the result delivered but the flag never cleared.
 - **Decision:** `workers/simPool.ts` holds one module-level worker per owner ('montecarlo' | 'tradeoff'); no terminate-on-unmount. Run state (running flag + progress) is mirrored in the results store — the single source of truth — so a remounted view picks up live progress and the correct flag; pool callbacks reference stable store setters. Cancel stays explicit and scoped per owner. Tradeoff's per-candidate chain token is module-level (a ref reset on remount and halted the background chain).
 - **Consequences:** A run started on the MC tab completes even if the user browses Forecast/Optimizer meanwhile; the result appears on return. Workers live until explicit cancel or page unload — two workers max, same as before.
+
+## 2026-11-04 — MiniMap removed (rendered an empty box)
+- **Status:** decided
+- **Context:** The React Flow MiniMap rendered its frame and viewport mask but zero node dots — the RF store never populated measured dimensions for our custom node types (verified: `.react-flow__minimap-node` count stayed 0 even after 5s; `nodeHasDimensions` gate filters every node). An empty minimap frame reads as a broken control.
+- **Decision:** Remove the MiniMap; keep zoom Controls + fitView. Revisit if a future @xyflow/react version measures custom nodes correctly — the removal is one line to revert.
+- **Consequences:** Slightly less at-a-glance navigation on large graphs; the canvas remains fully pannable/zoomable.
