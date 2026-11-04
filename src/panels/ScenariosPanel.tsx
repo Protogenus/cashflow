@@ -245,6 +245,7 @@ export function ScenariosPanel() {
               <button
                 className="cf-btn shrink-0 px-1.5 text-[11px]"
                 title="Rename"
+                aria-label={`Rename scenario ${scn.name}`}
                 onClick={() => { setEditingId(scn.id); setEditName(scn.name); }}
               >
                 ✎
@@ -252,6 +253,7 @@ export function ScenariosPanel() {
               <button
                 className="cf-btn shrink-0 px-1.5 text-[11px]"
                 title="Duplicate"
+                aria-label={`Duplicate scenario ${scn.name}`}
                 onClick={() => duplicateScenario(scn.id)}
               >
                 ⧉
@@ -259,6 +261,7 @@ export function ScenariosPanel() {
               <button
                 className="cf-btn shrink-0 px-1.5 text-[11px]"
                 title={scenarios.length <= 1 ? 'Cannot delete the last scenario' : 'Delete'}
+                aria-label={`Delete scenario ${scn.name}`}
                 disabled={scenarios.length <= 1}
                 onClick={() => {
                   if (window.confirm(`Delete scenario "${scn.name}"? This cannot be undone.`)) {

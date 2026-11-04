@@ -10,16 +10,17 @@
   --border: #e2ded4;
   --text: #1c1a15;
   --text-muted: #6b665a;
-  --income: #2f7d4f;
+  --income: #2c7449;
   --expense: #b3402e;
   --accent: #2b5f8a;
-  --warning: #a86a12;
+  --warning: #96600f;
   --danger: #b3402e;
   --node-balance: #2b5f8a;
   --node-logic: #6d5b8e;
   --node-goal: #2f7d4f;
   --node-debt: #8a4a2b;
-  --node-variable: #a86a12;
+  --node-variable: #96600f;
+  --on-accent: #ffffff;
 }
 
 .dark {
@@ -39,6 +40,7 @@
   --node-goal: #5cb87f;
   --node-debt: #d08a5a;
   --node-variable: #d9a441;
+  --on-accent: #161511;
 }
 
 html, body, #root {
@@ -249,7 +251,7 @@ body {
 }
 .cf-btn:hover { background: var(--surface-2); }
 .cf-btn:disabled { opacity: 0.45; cursor: default; }
-.cf-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cf-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 .cf-btn-primary:hover { filter: brightness(1.08); background: var(--accent); }
 
 .cf-palette-item {

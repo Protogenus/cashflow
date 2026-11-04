@@ -435,6 +435,7 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
             disabled={running}
             onClick={() => setSeed(newSeed())}
             title="Randomize the seed"
+            aria-label="Randomize the seed"
           >
             🎲 New
           </button>

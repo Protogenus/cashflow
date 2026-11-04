@@ -54,13 +54,23 @@ export function FlowCanvas() {
 
   const rfNodes: Node<CFNodeData>[] = useMemo(
     () =>
-      nodes.map((n) => ({
-        id: n.id,
-        type: n.type,
-        position: n.position,
-        selected: n.id === selectedNodeId,
-        data: { node: n, status: cardStatus(graph, n), orphaned: orphanIds.has(n.id), disabled: disabledIds.includes(n.id) },
-      })),
+      nodes.map((n) => {
+        const status = cardStatus(graph, n);
+        const disabled = disabledIds.includes(n.id);
+        return {
+          id: n.id,
+          type: n.type,
+          position: n.position,
+          selected: n.id === selectedNodeId,
+          // DESIGN.md §9: nodes exposed as named buttons for screen readers.
+          ariaLabel:
+            `${NODE_META[n.type].title} node: ${n.label}, ${status.primary}` +
+            (status.secondary ? `, ${status.secondary}` : '') +
+            (disabled ? ', excluded from this scenario' : '') +
+            (orphanIds.has(n.id) ? ', not connected' : ''),
+          data: { node: n, status, orphaned: orphanIds.has(n.id), disabled },
+        };
+      }),
     [nodes, selectedNodeId, orphanIds, disabledIds, graph],
   );
 

@@ -26,19 +26,20 @@ All text/background pairings target **WCAG AA (4.5:1 normal text, 3:1 large text
 --border:        #E2DED4;
 --text:          #1C1A15;  /* near-black, warm */
 --text-muted:    #6B665A;  /* 4.6:1 on --bg */
---income:        #2F7D4F;  /* money in — deep green */
+--income:        #2C7449;  /* money in — deep green (darkened 2026-11-04 for AA on --surface-2) */
 --expense:       #B3402E;  /* money out — brick red */
 --accent:        #2B5F8A;  /* interactive blue-slate */
---warning:       #A86A12;  /* amber-brown for pinch/attention */
+--warning:       #96600F;  /* amber-brown for pinch/attention (darkened 2026-11-04: was 4.24:1, now 5.05:1) */
 --danger:        #B3402E;  /* same as expense: below-$0 */
 --band-50:       rgba(43,95,138,.28);  /* 50% interval fill */
 --band-80:       rgba(43,95,138,.16);  /* 80% interval fill */
 --band-90:       rgba(43,95,138,.08);  /* 90% interval fill */
+--on-accent:     #FFFFFF;  /* text on --accent fills (2026-11-04) */
 --node-balance:  #2B5F8A;
 --node-logic:    #6D5B8E;  /* splits/conditionals — muted violet */
 --node-goal:     #2F7D4F;  /* goals/debt-payoff — green family */
 --node-debt:     #8A4A2B;  /* debt — rust */
---node-variable: #A86A12;  /* variable amounts — amber family */
+--node-variable: #96600F;  /* variable amounts — amber family */
 
 /* Dark theme */
 --bg:            #161511;
@@ -55,6 +56,7 @@ All text/background pairings target **WCAG AA (4.5:1 normal text, 3:1 large text
 --band-50:       rgba(127,168,204,.30);
 --band-80:       rgba(127,168,204,.17);
 --band-90:       rgba(127,168,204,.09);
+--on-accent:     #161511;  /* text on --accent fills: #fff was 2.51:1 in dark (2026-11-04) */
 --node-balance:  #7FA8CC;
 --node-logic:    #A894C8;
 --node-goal:     #5CB87F;

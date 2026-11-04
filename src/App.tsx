@@ -126,8 +126,56 @@ function ValidationBadge() {
   );
 }
 
-function Toast() {
-  const toast = useGraphStore((s) => s.toast);
+const SHORTCUTS: [string, string][] = [
+  ['Tab / Shift+Tab', 'Move focus between nodes, edges, and controls'],
+  ['Enter (on a node)', 'Select the node and open its editor'],
+  ['Delete / Backspace', 'Delete the selected node or edge'],
+  ['Ctrl+Z / Ctrl+Shift+Z', 'Undo / redo'],
+  ['Esc', 'Clear selection, close dialogs'],
+  ['?', 'Open this shortcut list'],
+];
+
+/** Keyboard-shortcut reference (DESIGN.md §9: `?` opens the shortcut list). */
+function ShortcutsDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.5)' }}
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Keyboard shortcuts"
+    >
+      <div className="cf-panel w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
+          <button className="cf-btn px-2 py-1 text-xs" onClick={onClose} aria-label="Close shortcut list">
+            ×
+          </button>
+        </div>
+        <dl className="mt-3 flex flex-col gap-2 text-[13px]">
+          {SHORTCUTS.map(([keys, what]) => (
+            <div key={keys} className="flex items-center gap-3">
+              <dt
+                className="shrink-0 rounded border px-2 py-0.5 font-mono text-xs"
+                style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
+              >
+                {keys}
+              </dt>
+              <dd style={{ color: 'var(--text-muted)' }}>{what}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="mt-3 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+          On small screens the plan also works as a node list — every action above
+          has a button equivalent there.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Toast() {  const toast = useGraphStore((s) => s.toast);
   const dismissToast = useGraphStore((s) => s.dismissToast);
   useEffect(() => {
     if (!toast) return;
@@ -164,6 +212,7 @@ export function App() {
   const mobilePlanView = useSettingsStore((s) => s.mobilePlanView);
   const setSettings = useSettingsStore((s) => s.set);
   const [mobileSection, setMobileSection] = useState<'plan' | 'results'>('plan');
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Theme: light / dark / system (follows the OS setting).
   useEffect(() => {
@@ -249,19 +298,32 @@ export function App() {
   }, []);
 
   // Esc: close dialogs first, then clear the node selection.
+  // `?` opens the keyboard-shortcut list (DESIGN.md §9).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      if (showTemplates) {
-        setShowTemplates(false);
+      const ae = document.activeElement as HTMLElement | null;
+      const typing = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
+      if (e.key === 'Escape') {
+        if (showShortcuts) {
+          setShowShortcuts(false);
+          return;
+        }
+        if (showTemplates) {
+          setShowTemplates(false);
+          return;
+        }
+        const st = useGraphStore.getState();
+        if (st.selectedNodeId) st.setSelected(null);
         return;
       }
-      const st = useGraphStore.getState();
-      if (st.selectedNodeId) st.setSelected(null);
+      if (e.key === '?' && !typing) {
+        e.preventDefault();
+        setShowShortcuts(true);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [showTemplates]);
+  }, [showTemplates, showShortcuts]);
 
   const sectionBtn = (id: 'plan' | 'results', label: string) => (
     <button
@@ -297,6 +359,14 @@ export function App() {
             </button>
             <button className="cf-btn" onClick={redo} disabled={futureLen === 0} title="Redo (Ctrl+Shift+Z)">
               ↪ Redo
+            </button>
+            <button
+              className="cf-btn"
+              onClick={() => setShowShortcuts(true)}
+              title="Keyboard shortcuts (?)"
+              aria-label="Open keyboard shortcut list"
+            >
+              ?
             </button>
             <button
               className="cf-btn"
@@ -394,6 +464,7 @@ export function App() {
         <Toast />
         {!onboardingComplete && <Onboarding />}
         {showTemplates && <TemplatePicker onClose={() => setShowTemplates(false)} />}
+        {showShortcuts && <ShortcutsDialog onClose={() => setShowShortcuts(false)} />}
       </div>
     </ReactFlowProvider>
   );

@@ -94,6 +94,37 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
     return { data, byDate, bufferDollars };
   }, [result, assumptions.safetyBufferCents]);
 
+  // Text alternative for the chart (DESIGN.md §9): same numbers the chart
+  // shows, as sentences — also the basis of the explanation panel.
+  const chartSummary = useMemo(() => {
+    if (!result) return '';
+    let min = Infinity;
+    let max = -Infinity;
+    let minDate = result.ledger[0]?.date;
+    let maxDate = result.ledger[0]?.date;
+    for (const d of result.ledger) {
+      if (d.balanceCents < min) {
+        min = d.balanceCents;
+        minDate = d.date;
+      }
+      if (d.balanceCents > max) {
+        max = d.balanceCents;
+        maxDate = d.date;
+      }
+    }
+    const days = result.ledger.length;
+    return (
+      `Projected balance over ${days} days. ` +
+      `Lowest point ${formatMoneyWhole(min)} on ${minDate ? formatDateLong(minDate) : '—'}; ` +
+      `highest point ${formatMoneyWhole(max)} on ${maxDate ? formatDateLong(maxDate) : '—'}. ` +
+      `Safe to spend ${formatMoneyWhole(result.safeToSpendCents)} after the ` +
+      `${formatMoneyWhole(assumptions.safetyBufferCents)} buffer.` +
+      (result.firstNegativeDate
+        ? ` Balance goes below $0 on ${formatDateLong(result.firstNegativeDate)}.`
+        : ' Balance stays at or above $0 for the whole window.')
+    );
+  }, [result, assumptions.safetyBufferCents]);
+
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* horizon selector */}
@@ -207,7 +238,7 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
             <div className="px-2 pt-1 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
               Projected balance · {assumptions.horizonDays} days
             </div>
-            <ResponsiveContainer width="100%" height={260}>
+            <ResponsiveContainer width="100%" height={260} role="img" aria-label={`Balance chart. ${chartSummary}`}>
               <LineChart data={chart.data} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                 <XAxis
@@ -261,6 +292,10 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
               <span><span style={{ color: 'var(--warning)' }}>┄</span> Safety buffer</span>
               <span><span style={{ color: 'var(--warning)' }}>◆</span> Lowest point</span>
             </div>
+            <details className="px-2 pb-2 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              <summary className="cursor-pointer underline">Chart text summary</summary>
+              <p className="mt-1 leading-relaxed">{chartSummary}</p>
+            </details>
           </div>
 
           {/* assumptions (visible, per RESEARCH.md §3) */}

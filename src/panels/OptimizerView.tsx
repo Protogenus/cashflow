@@ -54,7 +54,7 @@ function CandidateCard({
       <div className="flex items-center gap-2">
         <span
           className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
-          style={{ background: candidate.rank === 1 ? 'var(--accent)' : 'var(--surface-2)', color: candidate.rank === 1 ? '#fff' : 'var(--text)' }}
+          style={{ background: candidate.rank === 1 ? 'var(--accent)' : 'var(--surface-2)', color: candidate.rank === 1 ? 'var(--on-accent)' : 'var(--text)' }}
         >
           {candidate.rank}
         </span>
