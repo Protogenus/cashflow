@@ -3,7 +3,7 @@
  * of truth; RF nodes/edges are derived view-models. Handles: palette drop,
  * drag-to-connect (engine-validated), grouped undo drag, Delete key.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Background,
   BackgroundVariant,
@@ -49,6 +49,74 @@ export function FlowCanvas() {
   /** While a node is being dragged, SMIL dot animations restart every mousemove
    *  (visual judder) — so the traveling dots hide until the drag ends. */
   const anyDragging = useRFStore((s) => s.nodes.some((n) => n.dragging));
+
+  /**
+   * Authoritative click selection, run in the capture phase (before RF's own
+   * handlers). RF's internal replace-selection misfires with fully-controlled
+   * selection state — plain clicks drop the deselect-others change, so clicks
+   * accumulate as if shift were held, and clicks on already-selected nodes
+   * sometimes do nothing. Taking it over here makes every gesture exact:
+   * - mousedown on an unselected node: select exactly it (so a drag moves it)
+   * - mousedown on a selected node: leave the group intact (group drag works)
+   * - click (no drag): collapse to exactly the clicked node
+   * - ctrl/cmd+click or mousedown: toggle just that node
+   * Marquee selection starts on the pane (no node target) and keeps flowing
+   * through onNodesChange untouched.
+   */
+  const suppressSelectRef = useRef<string | null>(null);
+  /**
+   * Node under the last mousedown. The click event's own target is unreliable
+   * (the node DOM can be recycled between mousedown and mouseup), so the
+   * click handler reads the gesture's node from here instead.
+   */
+  const mouseDownNodeRef = useRef<string | null>(null);
+  const armSuppress = useCallback((id: string) => {
+    suppressSelectRef.current = id;
+    window.addEventListener('pointerup', () => {
+      suppressSelectRef.current = null;
+    }, { once: true });
+    window.setTimeout(() => {
+      if (suppressSelectRef.current === id) suppressSelectRef.current = null;
+    }, 1500);
+  }, []);
+
+  const nodeIdFromEvent = (event: React.SyntheticEvent) => {
+    const el = (event.target as HTMLElement | null)?.closest?.('.react-flow__node');
+    return el?.getAttribute('data-id') ?? null;
+  };
+
+  const handleNodeMouseDownCapture = useCallback((event: React.MouseEvent) => {
+    const id = nodeIdFromEvent(event);
+    mouseDownNodeRef.current = id;
+    if (!id) return;
+    const st = useGraphStore.getState();
+    if (event.metaKey || event.ctrlKey) {
+      armSuppress(id);
+      const ids = new Set(st.selectedNodeIds);
+      if (ids.has(id)) ids.delete(id);
+      else ids.add(id);
+      setSelectedEdgeId(null);
+      st.setSelectedMany([...ids]);
+    } else if (!st.selectedNodeIds.includes(id)) {
+      armSuppress(id);
+      setSelectedEdgeId(null);
+      st.setSelectedMany([id]);
+    }
+    // Already-selected node, no modifier: leave the group alone so a drag
+    // moves the whole group; the click handler collapses it if no drag.
+  }, [armSuppress]);
+
+  const handleNodeClickCapture = useCallback((event: React.MouseEvent) => {
+    const id = mouseDownNodeRef.current ?? nodeIdFromEvent(event);
+    if (!id || event.metaKey || event.ctrlKey) return;
+    const st = useGraphStore.getState();
+    const ids = st.selectedNodeIds;
+    if (!(ids.length === 1 && ids[0] === id)) {
+      armSuppress(id);
+      setSelectedEdgeId(null);
+      st.setSelectedMany([id]);
+    }
+  }, [armSuppress]);
   const flowActive = useFlowStore((s) => s.active);
   const flowFrames = useFlowStore((s) => s.frames);
   const flowFrameIndex = useFlowStore((s) => s.frameIndex);
@@ -141,6 +209,9 @@ export function FlowCanvas() {
         if (c.type === 'position' && c.position) {
           st.moveNode(c.id, c.position); // silent; history grouped by drag start/stop
         } else if (c.type === 'select') {
+          // Skipped while our own capture-phase click handling owns this
+          // node's selection for the gesture (see onMouseDownCapture).
+          if (suppressSelectRef.current === c.id) continue;
           // Accumulate into the multi-selection set (marquee / shift-click).
           const ids = new Set(st.selectedNodeIds);
           if (c.selected) ids.add(c.id);
@@ -221,6 +292,8 @@ export function FlowCanvas() {
       }}
       onDrop={onDrop}
       onDragOver={onDragOver}
+      onMouseDownCapture={handleNodeMouseDownCapture}
+      onClickCapture={handleNodeClickCapture}
       deleteKeyCode={null}
       fitView
       minZoom={0.2}

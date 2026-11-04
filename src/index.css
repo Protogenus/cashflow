@@ -221,6 +221,14 @@ input[type="range"] {
 .cf-edge-income .cf-money-dot { fill: var(--sage); }
 .cf-edge-expense .cf-money-dot { fill: var(--expense); }
 .cf-edge-logic .cf-money-dot { fill: var(--amber); }
+
+/* The multi-selection rectangle is visual only: with pointer-events it swallows
+   clicks on the nodes inside a group, so a group can never be collapsed by
+   clicking one of its nodes. Group drag still works via any selected node. */
+.react-flow__nodesselection-rect {
+  pointer-events: none !important;
+}
+
 .cf-flow-chips {
   position: absolute;
   bottom: -15px;
