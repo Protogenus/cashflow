@@ -9,6 +9,44 @@ import { useGraphStore } from './store/graphStore';
 import { FlowCanvas } from './canvas/FlowCanvas';
 import { Palette } from './canvas/Palette';
 import { Inspector } from './canvas/Inspector';
+import { ForecastView } from './panels/ForecastView';
+
+function RightPanel() {
+  const [tab, setTab] = useState<'inspector' | 'forecast'>('forecast');
+  const selectedNodeId = useGraphStore((s) => s.selectedNodeId);
+  // Selecting a node opens its editor; the forecast stays one click away.
+  useEffect(() => {
+    if (selectedNodeId) setTab('inspector');
+  }, [selectedNodeId]);
+
+  const tabBtn = (id: 'inspector' | 'forecast', label: string) => (
+    <button
+      key={id}
+      className="flex-1 px-3 py-2 text-xs font-semibold"
+      style={{
+        color: tab === id ? 'var(--text)' : 'var(--text-muted)',
+        borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
+      }}
+      onClick={() => setTab(id)}
+      aria-selected={tab === id}
+      role="tab"
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex border-b" style={{ borderColor: 'var(--border)' }} role="tablist">
+        {tabBtn('forecast', 'Forecast')}
+        {tabBtn('inspector', 'Inspector')}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto" role="tabpanel">
+        {tab === 'forecast' ? <ForecastView /> : <Inspector />}
+      </div>
+    </div>
+  );
+}
 
 function useDarkMode() {
   const [dark, setDark] = useState(false);
@@ -137,11 +175,11 @@ export function App() {
             <FlowCanvas />
           </main>
           <aside
-            className="w-80 shrink-0 overflow-y-auto border-l"
+            className="w-80 shrink-0 border-l"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
-            aria-label="Inspector"
+            aria-label="Inspector and forecast"
           >
-            <Inspector />
+            <RightPanel />
           </aside>
         </div>
         <Toast />
