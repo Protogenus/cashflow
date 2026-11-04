@@ -112,6 +112,12 @@ Format for each entry:
 - **Decision:** `optimize()` computes liveness per split via `buildAllocationPlan`: excluded when no income is wired in, when its income is already claimed by another split (first split in node order wins), or when no output reaches a goal/debt. Excluded splits are reported with reasons (`excludedSplits`) and the search note says so in plain language. Search space: 5% grid; beyond 50k combos coarsen to 10%; beyond that a seeded sample (reproducible) — `searchMode`/`stepUsed`/`searchNote` always tell the UI what ran.
 - **Consequences:** The optimizer throws a clear, actionable error when nothing is live ("wire a split output to a goal or debt node") instead of returning junk. Measured: 4 live 2-output splits × 90 days = 14,641 combos in ~2.1–2.6s on this VM (under the 3s budget); typical 1–2 split searches finish in tens of ms.
 
+## 2026-11-03 — Monte Carlo: per-run streams, bill coverability, worker protocol
+- **Status:** decided
+- **Context:** MC needs reproducible, order-independent randomness (worker scheduling must not change results), plus per-bill coverability and rent-by-month — not just bands.
+- **Decision:** Each run's stream is `mulberry32(masterSeed ^ imul(runIndex+1, 0x9E3779B9))` — order-independent by construction. Stream order per run: variable draws first, then shock draws (DECISIONS.md). A bill is "covered" when the day's opening balance >= the bill amount (end-of-previous-day, or the starting balance on day 0); per-node probability = share of runs where every occurrence was covered; rent = /rent/i expense else largest monthly expense, reported by calendar month. Failed-trial drill-down capped at 200 stored rows (true count kept). Worker protocol: `{id, kind:'montecarlo', graph, assumptions, options}` in; progress/done/error out; cancel = terminate. ShockEvent gains optional `kind` ('oneTime' | 'missedPaycheck'), `date`, `incomeNodeId` — backward compatible.
+- **Consequences:** Measured: 5,000 runs × 90 days in ~0.5s on this VM (target was < 3s) — no hot-loop optimization needed; the skipHash/skipValidation fast path does the work. UI runs 500–10,000 (default 2,000) with progress + cancel; seed displayed; "re-run with same seed" reproduces bit-identical results (unit-tested).
+
 ## Template for future decisions
 
 ```
