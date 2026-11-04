@@ -4,6 +4,6 @@ dist/
 .DS_Store
 out/
 release/
-release-staging/win-unpacked/
-release-staging/resources/
+release-staging/*
+!release-staging/START_CASHFLOW.bat
 cashflow-*.zip

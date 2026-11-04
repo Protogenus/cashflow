@@ -49,8 +49,10 @@ jobs:
           $ebZip = "release/Cashflow-$version-win.zip"
           if (-not (Test-Path $ebZip)) { throw "electron-builder zip not found: $ebZip" }
           if (-not (Test-Path 'release-staging/START_CASHFLOW.bat')) { throw 'launcher bat missing' }
+          # electron-builder's win zip holds files at TOP LEVEL (no win-unpacked
+          # wrapper) — extraction yields the flat layout the launcher expects.
           Expand-Archive -Path $ebZip -DestinationPath 'release-staging' -Force
-          if (-not (Test-Path 'release-staging/win-unpacked/Cashflow.exe')) { throw 'Cashflow.exe missing after extract' }
+          if (-not (Test-Path 'release-staging/Cashflow.exe')) { throw 'Cashflow.exe missing after extract' }
           if (-not (Test-Path 'release-staging/resources/app.asar')) { throw 'app.asar missing' }
           $out = "cashflow-$version.zip"
           if (Test-Path $out) { Remove-Item $out }
