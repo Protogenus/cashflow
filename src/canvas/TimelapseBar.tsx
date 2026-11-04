@@ -18,6 +18,8 @@ export function TimelapseBar() {
   const playing = useFlowStore((s) => s.playing);
   const frameIndex = useFlowStore((s) => s.frameIndex);
   const frames = useFlowStore((s) => s.frames);
+  const eventIndices = useFlowStore((s) => s.eventIndices);
+  const pauseOnEvents = useFlowStore((s) => s.pauseOnEvents);
   const windowDays = useFlowStore((s) => s.windowDays);
   const speed = useFlowStore((s) => s.speed);
   const start = useFlowStore((s) => s.start);
@@ -25,6 +27,8 @@ export function TimelapseBar() {
   const togglePlay = useFlowStore((s) => s.togglePlay);
   const setFrame = useFlowStore((s) => s.setFrame);
   const tick = useFlowStore((s) => s.tick);
+  const jumpEvent = useFlowStore((s) => s.jumpEvent);
+  const setPauseOnEvents = useFlowStore((s) => s.setPauseOnEvents);
   const setWindowDays = useFlowStore((s) => s.setWindowDays);
   const setSpeed = useFlowStore((s) => s.setSpeed);
 
@@ -75,6 +79,15 @@ export function TimelapseBar() {
               ⏹
             </button>
             <button
+              className="cf-btn px-2 py-1.5 text-sm"
+              onClick={() => jumpEvent(-1)}
+              title="Jump to the previous day money moved"
+              aria-label="Previous money event"
+              disabled={eventIndices.length === 0}
+            >
+              ⏮
+            </button>
+            <button
               className="cf-btn cf-btn-primary px-3 py-1.5 text-sm font-semibold"
               onClick={togglePlay}
               title={playing ? 'Pause' : 'Play'}
@@ -82,16 +95,50 @@ export function TimelapseBar() {
             >
               {playing ? '⏸ Pause' : '▶ Play'}
             </button>
+            <button
+              className="cf-btn px-2 py-1.5 text-sm"
+              onClick={() => jumpEvent(1)}
+              title="Jump to the next day money moved"
+              aria-label="Next money event"
+              disabled={eventIndices.length === 0}
+            >
+              ⏭
+            </button>
+            <button
+              className={`cf-btn px-2 py-1.5 text-xs ${pauseOnEvents ? 'cf-btn-primary' : ''}`}
+              onClick={() => setPauseOnEvents(!pauseOnEvents)}
+              title={pauseOnEvents ? 'Playing pauses on every day money moves (on)' : 'Playing pauses on every day money moves (off)'}
+              aria-pressed={pauseOnEvents}
+              aria-label="Pause on money days"
+            >
+              ⏸💰
+            </button>
           </div>
-          <input
-            type="range"
-            min={0}
-            max={Math.max(0, frames.length - 1)}
-            value={frameIndex}
-            onChange={(e) => setFrame(Number(e.target.value))}
-            className="min-w-32 flex-1"
-            aria-label="Timelapse day"
-          />
+          <div className="min-w-32 flex-1">
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, frames.length - 1)}
+              value={frameIndex}
+              onChange={(e) => setFrame(Number(e.target.value))}
+              className="w-full"
+              aria-label="Timelapse day"
+            />
+            {frames.length > 1 && (
+              <div className="relative h-1.5" aria-hidden="true">
+                {eventIndices.map((i) => (
+                  <span
+                    key={i}
+                    className="absolute top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full"
+                    style={{
+                      left: `${(i / (frames.length - 1)) * 100}%`,
+                      background: 'var(--accent)',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
           <div className="text-[13px] font-semibold" aria-live="polite">
             {dateLabel}
             <span className="money ml-2" style={{ color: 'var(--text-muted)' }}>
