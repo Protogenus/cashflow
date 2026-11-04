@@ -64,6 +64,36 @@ Format for each entry:
 
 ---
 
+## 2026-11-03 — Monthly-on-29th: same clamp as 31st (Feb 29 fires only in leap years)
+- **Status:** decided
+- **Context:** The build brief says "Feb 29 fires only in leap years" while DECISIONS.md pins the 31st→last-day clamp for all short months. A monthly-29th series needed one rule for February in non-leap years: skip the month (RFC 5545) or clamp to Feb 28.
+- **Decision:** Clamp, consistent with the 31st convention — a monthly-29th series fires Feb 28 in non-leap years and Feb 29 in leap years. The literal Feb-29 date therefore fires only in leap years, satisfying both statements. Skipping is rejected for the same reason as the 31st: a skipped month = a silently missed bill.
+- **Consequences:** Engine tests pin: monthly-29th → 2023-02-28 / 2024-02-29; no occurrence ever dated 2023-02-29.
+
+## 2026-11-03 — Single-project layout instead of packages/engine + apps/web monorepo
+- **Status:** decided
+- **Context:** ARCHITECTURE.md §5 specifies a pnpm monorepo (packages/engine, apps/web). The build brief requires package.json at the repo root with no nested project dir.
+- **Decision:** One Vite project; the engine lives at `src/engine/` as a pure, framework-free TypeScript module (no React imports — enforced by a Vitest gate), runnable in a Web Worker as specified. The UI imports only from `src/engine/index.ts`.
+- **Consequences:** No pnpm workspaces/filter commands; `npm run test` runs the engine suite. If the engine ever needs independent publishing, revisit the split — the module boundary (single import surface) is preserved either way.
+
+## 2026-11-03 — Business-day adjustment: weekends only; holiday calendar deferred
+- **Status:** decided
+- **Context:** DECISIONS.md names US federal holidays as baseline data for Following/Preceding. A holiday table is data that must be maintained (and wrong holiday data silently moves real bills); milestones 1–3 ship the convention machinery with weekends only.
+- **Decision:** `shiftBusinessDay` adjusts for Saturday/Sunday only. No invented holiday entries. Adding the federal-holiday table is a later, data-only change behind the same function signature.
+- **Consequences:** Bills landing on a federal-holiday Monday are not shifted yet; documented in the assumptions line of the forecast view until the table lands.
+
+## 2026-11-03 — Business-day defaults follow DECISIONS.md, not the brief's shorthand
+- **Status:** decided
+- **Context:** The build brief says "default Following"; DECISIONS.md (2026-11-03 business-day entry) specifies income → Preceding, expenses → Following.
+- **Decision:** Follow DECISIONS.md: income nodes default to Preceding (paycheck lands the prior Friday), expense and variable-amount nodes default to Following (debit moves to Monday). Per-node override to preceding/following/none remains.
+- **Consequences:** `defaultBusinessDay()` in the engine encodes this; the inspector shows the effective default per node type.
+
+## 2026-11-03 — safetyBufferCents added to Assumptions
+- **Status:** decided
+- **Context:** The forecast view needs a buffer line ($500 default per the brief) and the safe-to-spend number is defined as minimum balance minus buffer. ARCHITECTURE.md's Assumptions had no buffer field.
+- **Decision:** Added `safetyBufferCents` (default 50000) to `Assumptions`; `ForecastResult.safeToSpendCents` = pinch balance − buffer, reported raw (may be negative — the UI decides display flooring).
+- **Consequences:** Changing the buffer changes the assumptions hash, correctly marking prior results stale.
+
 ## Template for future decisions
 
 ```
