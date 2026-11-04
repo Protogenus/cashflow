@@ -10,12 +10,13 @@ import { FlowCanvas } from './canvas/FlowCanvas';
 import { Palette } from './canvas/Palette';
 import { Inspector } from './canvas/Inspector';
 import { ForecastView } from './panels/ForecastView';
+import { AlertsPanel } from './panels/AlertsPanel';
 import { ScenariosPanel } from './panels/ScenariosPanel';
 import { OptimizerView } from './panels/OptimizerView';
 import { MonteCarloView } from './panels/MonteCarloView';
 import { TradeoffView } from './panels/TradeoffView';
 
-type RightTab = 'forecast' | 'scenarios' | 'optimizer' | 'montecarlo' | 'tradeoff' | 'inspector';
+type RightTab = 'forecast' | 'alerts' | 'scenarios' | 'optimizer' | 'montecarlo' | 'tradeoff' | 'inspector';
 
 function RightPanel() {
   const [tab, setTab] = useState<RightTab>('forecast');
@@ -45,6 +46,7 @@ function RightPanel() {
     <div className="flex h-full flex-col">
       <div className="flex border-b" style={{ borderColor: 'var(--border)' }} role="tablist">
         {tabBtn('forecast', 'Forecast')}
+        {tabBtn('alerts', 'Alerts')}
         {tabBtn('scenarios', 'Scenarios')}
         {tabBtn('optimizer', 'Optimizer')}
         {tabBtn('montecarlo', 'Monte Carlo')}
@@ -53,6 +55,7 @@ function RightPanel() {
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="tabpanel">
         {tab === 'forecast' && <ForecastView />}
+        {tab === 'alerts' && <AlertsPanel />}
         {tab === 'scenarios' && <ScenariosPanel />}
         {tab === 'optimizer' && <OptimizerView />}
         {tab === 'montecarlo' && <MonteCarloView />}
