@@ -31,6 +31,7 @@ export function findDrivers(
     if (day.date < windowStart || day.date > pinchDate) continue;
     for (const ev of day.events) {
       if (ev.amountCents >= 0) continue; // only outflows drive a low point
+      if (ev.kind === 'transfer') continue; // allocations to goals/debt are not bills
       const existing = totals.get(ev.nodeId);
       if (existing) {
         existing.contributionCents += ev.amountCents;

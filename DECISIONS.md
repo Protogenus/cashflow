@@ -94,6 +94,18 @@ Format for each entry:
 - **Decision:** Added `safetyBufferCents` (default 50000) to `Assumptions`; `ForecastResult.safeToSpendCents` = pinch balance − buffer, reported raw (may be negative — the UI decides display flooring).
 - **Consequences:** Changing the buffer changes the assumptions hash, correctly marking prior results stale.
 
+## 2026-11-03 — Scenario model: per-scenario node toggles, full graph copies
+- **Status:** decided
+- **Context:** What-if scenarios need independent graphs that diverge (Base vs "Job loss") plus a cheap way to exclude a node without deleting it. ARCHITECTURE.md's Scenario had no toggle field.
+- **Decision:** `Scenario` gains `disabledNodeIds: NodeId[]`. The engine's `forecast()` accepts `opts.disabledNodeIds` and filters nodes + incident edges BEFORE validation (a disabled node can never raise a spurious validation error); `forecastScenario(scenario, assumptions, opts)` is the pure scenario-aware wrapper. The Zustand scenarioStore owns the scenario list; the graphStore stays the editing surface for the active scenario, mirrored via a subscription (undo history resets on scenario switch — cross-scenario undo would be surprising). The model is plain JSON, ready for milestone-10 persistence.
+- **Consequences:** Forecast/optimizer/Monte Carlo all take the active scenario's toggles. Disabling the starting-balance node is an honest validation error, not a silent chart.
+
+## 2026-11-03 — Split allocation semantics: goal/debt-bound shares leave the spendable walk
+- **Status:** decided
+- **Context:** The milestone-3 walk ignored logic nodes entirely, so split percentages could not move any number — the optimizer (milestone 5) would have scored every candidate identically. A real, explainable semantic was needed.
+- **Decision:** Income wired into a percentageSplit is divided per output; shares routed to goal or debt sinks LEAVE the spendable balance walk as `transfer` ledger events (the money genuinely moves to savings / extra principal). Shares routed to expense outputs or nowhere stay spendable (money is fungible; the earmark moves no cash). Goal nodes accumulate routed money (hit date, shortfall at target date); debt nodes accumulate extra principal. Direct income → goal/debt edges route 100%. Transfers are excluded from pinch-point driver analysis (allocations are not bills). The debt node's own minimum payment stays unmodeled in the walk (as in milestone 3 — many users model it as a separate expense node); the optimizer scores debt payoff via an extended `projectDebtPayoff(debt, from, extraMonthlyCents)`.
+- **Consequences:** Graphs without goal/debt-routed splits forecast byte-identically to milestone 3 (all 85 pre-existing tests pass unchanged). The optimizer's objectives now have real gradients: savings-goal shortfall, spendable minimum, debt payoff date.
+
 ## Template for future decisions
 
 ```

@@ -18,6 +18,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useGraphStore } from '../store/graphStore';
+import { useScenarioStore } from '../store/scenarioStore';
 import { findOrphanedNodes } from '../engine';
 import { cardStatus } from './cardStatus';
 import { nodeTypes, type CFNodeData } from './nodes';
@@ -42,6 +43,9 @@ export function FlowCanvas() {
     () => new Set(findOrphanedNodes(graph).map((n) => n.id)),
     [graph],
   );
+  const disabledIds = useScenarioStore(
+    (s) => s.scenarios.find((x) => x.id === s.activeScenarioId)?.disabledNodeIds ?? [],
+  );
 
   const rfNodes: Node<CFNodeData>[] = useMemo(
     () =>
@@ -50,9 +54,9 @@ export function FlowCanvas() {
         type: n.type,
         position: n.position,
         selected: n.id === selectedNodeId,
-        data: { node: n, status: cardStatus(graph, n), orphaned: orphanIds.has(n.id) },
+        data: { node: n, status: cardStatus(graph, n), orphaned: orphanIds.has(n.id), disabled: disabledIds.includes(n.id) },
       })),
-    [nodes, selectedNodeId, orphanIds, graph],
+    [nodes, selectedNodeId, orphanIds, disabledIds, graph],
   );
 
   const rfEdges: Edge[] = useMemo(

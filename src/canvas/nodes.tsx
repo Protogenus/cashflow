@@ -13,6 +13,8 @@ export interface CFNodeData extends Record<string, unknown> {
   node: PlanNode;
   status: CardStatus;
   orphaned: boolean;
+  /** Excluded from the active scenario's forecast (milestone 4). */
+  disabled: boolean;
 }
 
 interface NodeProps {
@@ -59,9 +61,9 @@ function RectShell({
   flagTab?: boolean;
   handles: React.ReactNode;
 }) {
-  const { node, status, orphaned } = data;
+  const { node, status, orphaned, disabled } = data;
   return (
-    <div className={`cf-node ${className}${selected ? ' selected' : ''}`} title={node.label}>
+    <div className={`cf-node ${className}${selected ? ' selected' : ''}${disabled ? ' cf-node-disabled' : ''}`} title={node.label}>
       {chevron && <span className="cf-edge-chevron" aria-hidden="true" />}
       {flagTab && <span className="cf-flag-tab" aria-hidden="true" />}
       {orphaned && <OrphanBadge />}
@@ -119,10 +121,10 @@ export function DebtNode(props: NodeProps) {
 function DiamondShell({
   data, selected, badge, outputs,
 }: NodeProps & { badge?: React.ReactNode; outputs: { id: string; label: string }[] }) {
-  const { node, status, orphaned } = data;
+  const { node, status, orphaned, disabled } = data;
   const n = outputs.length;
   return (
-    <div className={`cf-diamond-wrap${selected ? ' selected' : ''}`} title={node.label}>
+    <div className={`cf-diamond-wrap${selected ? ' selected' : ''}${disabled ? ' cf-node-disabled' : ''}`} title={node.label}>
       {orphaned && <OrphanBadge />}
       {badge}
       <div className="cf-diamond" aria-hidden="true" />

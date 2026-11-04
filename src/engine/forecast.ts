@@ -17,7 +17,9 @@ import type {
   Assumptions,
   Cents,
   DebtNode,
+  DebtProgress,
   ForecastResult,
+  GoalProgress,
   ISODate,
   LedgerDay,
   LedgerEvent,
@@ -25,6 +27,7 @@ import type {
   PercentageSplitNode,
   PlanGraph,
   PlanNode,
+  Scenario,
 } from './types';
 
 // ---------- validation ----------
@@ -213,6 +216,32 @@ export function validateGraph(graph: PlanGraph): GraphValidation {
 
 export interface ForecastOptions {
   startDate?: ISODate; // default: today (local)
+  /** Scenario node toggles: these nodes (and their incident edges) are excluded. */
+  disabledNodeIds?: NodeId[];
+  /** Skip the assumptions hash (optimizer / Monte Carlo fast path — hashing
+   *  the graph per candidate/run dominates runtime at 10k+ calls). */
+  skipHash?: boolean;
+  /** Monte Carlo per-run sampled amounts for variableAmount nodes. */
+  variableOverrides?: Record<NodeId, Cents>;
+  /** Monte Carlo shock events injected as one-time expenses. */
+  extraExpenses?: ExtraExpense[];
+  /**
+   * Monte Carlo "missed paycheck": nodeId -> 0-based indices (in that income
+   * node's expanded occurrence order) to drop for this run.
+   */
+  skipIncomeOccurrences?: Record<NodeId, number[]>;
+}
+
+export interface ExtraExpense {
+  date: ISODate;
+  amountCents: Cents;
+  name: string;
+  nodeId: NodeId;
+}
+
+export interface GenerateEventsOptions {
+  variableOverrides?: Record<NodeId, Cents>;
+  skipIncomeOccurrences?: Record<NodeId, number[]>;
 }
 
 function fnv1a(str: string): string {
@@ -224,30 +253,144 @@ function fnv1a(str: string): string {
   return (h >>> 0).toString(16).padStart(8, '0');
 }
 
+// ---------- split allocation semantics ----------
+//
+// A percentageSplit divides each wired income occurrence into its outputs.
+// Money routed to a goal or debt sink LEAVES the spendable balance walk
+// (it is moved to savings / paid as extra principal — the checking account
+// genuinely drops), while shares routed to expense outputs or to nothing
+// stay spendable (money is fungible; the earmark doesn't move cash).
+// Goal nodes accumulate the routed amounts (hit date / shortfall); debt
+// nodes accumulate extra principal payments. Transfers are excluded from
+// driver analysis — they are allocations, not bills.
+//
+// Paths handled in v1: income -> percentageSplit -> (goal|debt), and direct
+// income -> (goal|debt) edges. An income wired into a split is fully handled
+// by that split (first split in node order wins if wired to several).
+
+export interface SinkRoute {
+  nodeId: NodeId;
+  kind: 'goal' | 'debt';
+  name: string;
+}
+
+export interface SplitAllocation {
+  splitId: NodeId;
+  incomeIds: NodeId[];
+  outputs: { outputId: string; percent: number; sinks: SinkRoute[] }[];
+}
+
+export interface AllocationPlan {
+  splits: SplitAllocation[];
+  /** Income node id -> the split allocation that handles its occurrences. */
+  routedIncome: Map<NodeId, SplitAllocation>;
+  /** Income node id -> direct goal/debt sinks (only when NOT routed via a split). */
+  directSinks: Map<NodeId, SinkRoute[]>;
+}
+
+/** Split integer cents into shares by percent; the largest share absorbs rounding. */
+export function splitShares(amountCents: Cents, percents: number[]): Cents[] {
+  const shares = percents.map((p) => Math.round((amountCents * p) / 100));
+  const diff = amountCents - shares.reduce((a, b) => a + b, 0);
+  if (diff !== 0 && shares.length > 0) {
+    let idx = 0;
+    for (let i = 1; i < shares.length; i++) if (shares[i] > shares[idx]) idx = i;
+    shares[idx] += diff;
+  }
+  return shares;
+}
+
+/** Divide integer cents equally; the first share absorbs rounding. */
+function divideEqually(amountCents: Cents, parts: number): Cents[] {
+  if (parts <= 0) return [];
+  const each = Math.round(amountCents / parts);
+  const out = new Array(parts).fill(each) as Cents[];
+  out[0] += amountCents - each * parts;
+  return out;
+}
+
+export function buildAllocationPlan(graph: PlanGraph): AllocationPlan {
+  const byId = new Map<NodeId, PlanNode>(graph.nodes.map((n) => [n.id, n]));
+  const splits: SplitAllocation[] = [];
+  const routedIncome = new Map<NodeId, SplitAllocation>();
+
+  for (const node of graph.nodes) {
+    if (node.type !== 'percentageSplit') continue;
+    const incomeIds: NodeId[] = [];
+    for (const e of graph.edges) {
+      if (e.target !== node.id) continue;
+      const src = byId.get(e.source);
+      if (src?.type === 'income' && !incomeIds.includes(src.id)) incomeIds.push(src.id);
+    }
+    const outputs = node.outputs.map((o) => {
+      const sinks: SinkRoute[] = [];
+      for (const e of graph.edges) {
+        if (e.source !== node.id || e.sourceHandle !== o.id) continue;
+        const tgt = byId.get(e.target);
+        if (tgt?.type === 'goal') sinks.push({ nodeId: tgt.id, kind: 'goal', name: tgt.name });
+        else if (tgt?.type === 'debt') sinks.push({ nodeId: tgt.id, kind: 'debt', name: tgt.name });
+      }
+      return { outputId: o.id, percent: o.percent, sinks };
+    });
+    const alloc: SplitAllocation = { splitId: node.id, incomeIds, outputs };
+    splits.push(alloc);
+    for (const iid of incomeIds) {
+      if (!routedIncome.has(iid)) routedIncome.set(iid, alloc); // first split wins
+    }
+  }
+
+  const directSinks = new Map<NodeId, SinkRoute[]>();
+  for (const e of graph.edges) {
+    const src = byId.get(e.source);
+    const tgt = byId.get(e.target);
+    if (src?.type !== 'income' || routedIncome.has(src.id)) continue;
+    if (tgt?.type === 'goal' || tgt?.type === 'debt') {
+      const list = directSinks.get(src.id) ?? [];
+      list.push({ nodeId: tgt.id, kind: tgt.type, name: tgt.name });
+      directSinks.set(src.id, list);
+    }
+  }
+
+  return { splits, routedIncome, directSinks };
+}
+
+/** Fingerprint tying a result to the exact graph + assumptions (+ scenario toggles). */
+export function graphFingerprint(
+  graph: PlanGraph,
+  assumptions: Assumptions,
+  disabledNodeIds: NodeId[] = [],
+): string {
+  return fnv1a(JSON.stringify({ graph, assumptions, disabledNodeIds }));
+}
+
 /** Expand every income/expense/variable node into dated occurrences. */
 export function generateEvents(
   graph: PlanGraph,
   startISO: ISODate,
   horizonDays: number,
+  opts: GenerateEventsOptions = {},
 ): Occurrence[] {
   const out: Occurrence[] = [];
   for (const node of graph.nodes) {
     switch (node.type) {
-      case 'income':
-        out.push(
-          ...expandRecurrence(
-            {
-              nodeId: node.id,
-              name: node.name,
-              kind: 'income',
-              amountCents: node.amountCents,
-              recurrence: node.recurrence,
-            },
-            startISO,
-            horizonDays,
-          ),
+      case 'income': {
+        const occs = expandRecurrence(
+          {
+            nodeId: node.id,
+            name: node.name,
+            kind: 'income',
+            amountCents: node.amountCents,
+            recurrence: node.recurrence,
+          },
+          startISO,
+          horizonDays,
         );
+        const skip = new Set(opts.skipIncomeOccurrences?.[node.id] ?? []);
+        occs.forEach((o, i) => {
+          if (!skip.has(i)) out.push(o);
+        });
         break;
+      }
       case 'expense':
         out.push(
           ...expandRecurrence(
@@ -264,14 +407,15 @@ export function generateEvents(
         );
         break;
       case 'variableAmount':
-        // Deterministic mode emits the typical value (ARCHITECTURE.md §2.1).
+        // Deterministic mode emits the typical value (ARCHITECTURE.md §2.1);
+        // Monte Carlo overrides it per run with a sampled amount.
         out.push(
           ...expandRecurrence(
             {
               nodeId: node.id,
               name: node.name,
               kind: 'expense',
-              amountCents: node.typicalCents,
+              amountCents: opts.variableOverrides?.[node.id] ?? node.typicalCents,
               recurrence: node.recurrence,
             },
             startISO,
@@ -290,13 +434,27 @@ export function generateEvents(
  * Day-by-day deterministic forecast. Throws if the graph is invalid
  * (no starting balance, cycles, bad ranges) — the caller surfaces the
  * validation errors from validateGraph instead of a silent wrong chart.
+ *
+ * Scenario support: `opts.disabledNodeIds` excludes nodes (and their
+ * incident edges) before validation, so a disabled node can never break
+ * the forecast with a spurious error.
  */
 export function forecast(
   graph: PlanGraph,
   assumptions: Assumptions,
   opts: ForecastOptions = {},
 ): ForecastResult {
-  const validation = validateGraph(graph);
+  // Scenario toggles: work on the filtered graph from here on.
+  const disabled = new Set(opts.disabledNodeIds ?? []);
+  const active: PlanGraph =
+    disabled.size === 0
+      ? graph
+      : {
+          nodes: graph.nodes.filter((n) => !disabled.has(n.id)),
+          edges: graph.edges.filter((e) => !disabled.has(e.source) && !disabled.has(e.target)),
+        };
+
+  const validation = validateGraph(active);
   if (!validation.valid) {
     throw new Error(
       `Cannot forecast an invalid graph: ${validation.errors.map((e) => e.message).join(' ')}`,
@@ -305,16 +463,56 @@ export function forecast(
 
   const startISO = opts.startDate ?? todayISO();
   const horizonDays = assumptions.horizonDays;
-  const balanceNode = graph.nodes.find((n) => n.type === 'startingBalance')!;
+  const balanceNode = active.nodes.find((n) => n.type === 'startingBalance')!;
   if (balanceNode.type !== 'startingBalance') throw new Error('unreachable');
 
-  const events = generateEvents(graph, startISO, horizonDays);
+  const plan = buildAllocationPlan(active);
+  const events = generateEvents(active, startISO, horizonDays, {
+    variableOverrides: opts.variableOverrides,
+    skipIncomeOccurrences: opts.skipIncomeOccurrences,
+  });
+  // Monte Carlo shock events: one-time expenses injected into the walk.
+  for (const s of opts.extraExpenses ?? []) {
+    events.push({
+      date: s.date,
+      amountCents: s.amountCents,
+      nodeId: s.nodeId,
+      name: s.name,
+      kind: 'expense',
+    });
+  }
   const byDate = new Map<ISODate, Occurrence[]>();
   for (const ev of events) {
     const list = byDate.get(ev.date);
     if (list) list.push(ev);
     else byDate.set(ev.date, [ev]);
   }
+
+  const goalNodes = active.nodes.filter((n) => n.type === 'goal');
+  const debtNodes = active.nodes.filter((n) => n.type === 'debt');
+  const saved = new Map<NodeId, Cents>(goalNodes.map((n) => [n.id, 0]));
+  const hitDate = new Map<NodeId, ISODate>();
+  const savedAtTarget = new Map<NodeId, Cents>(goalNodes.map((n) => [n.id, 0]));
+  const extraPaid = new Map<NodeId, Cents>(debtNodes.map((n) => [n.id, 0]));
+
+  /** Apply a routed share to its sinks; returns the transfer ledger events. */
+  const applyToSinks = (sinks: SinkRoute[], shareCents: Cents, date: ISODate): LedgerEvent[] => {
+    if (sinks.length === 0 || shareCents === 0) return [];
+    const parts = divideEqually(shareCents, sinks.length);
+    return sinks.map((sink, i) => {
+      const amt = parts[i];
+      if (sink.kind === 'goal') {
+        saved.set(sink.nodeId, (saved.get(sink.nodeId) ?? 0) + amt);
+        const goal = goalNodes.find((g) => g.id === sink.nodeId);
+        if (goal && goal.type === 'goal' && !hitDate.has(sink.nodeId) && (saved.get(sink.nodeId) ?? 0) >= goal.targetCents) {
+          hitDate.set(sink.nodeId, date);
+        }
+      } else {
+        extraPaid.set(sink.nodeId, (extraPaid.get(sink.nodeId) ?? 0) + amt);
+      }
+      return { nodeId: sink.nodeId, name: sink.name, amountCents: -amt, kind: 'transfer' as const };
+    });
+  };
 
   const start = toLocalDate(parseISODate(startISO));
   const ledger: LedgerDay[] = [];
@@ -338,6 +536,35 @@ export function forecast(
         amountCents: signed,
         kind: ev.kind,
       });
+      // Split-routed income: divide into outputs; goal/debt shares leave the walk.
+      if (ev.kind === 'income') {
+        const routed = plan.routedIncome.get(ev.nodeId);
+        if (routed) {
+          const shares = splitShares(ev.amountCents, routed.outputs.map((o) => o.percent));
+          routed.outputs.forEach((o, i) => {
+            const transfers = applyToSinks(o.sinks, shares[i], date);
+            for (const t of transfers) {
+              balance += t.amountCents; // negative: money moved out of the spendable balance
+              ledgerEvents.push(t);
+            }
+          });
+        } else {
+          const sinks = plan.directSinks.get(ev.nodeId);
+          if (sinks && sinks.length > 0) {
+            const transfers = applyToSinks(sinks, ev.amountCents, date);
+            for (const t of transfers) {
+              balance += t.amountCents;
+              ledgerEvents.push(t);
+            }
+          }
+        }
+      }
+    }
+    // Snapshot goal accumulation at each goal's target date (or earlier days).
+    for (const g of goalNodes) {
+      if (g.type === 'goal' && date <= g.targetDate) {
+        savedAtTarget.set(g.id, saved.get(g.id) ?? 0);
+      }
     }
     ledger.push({ date, balanceCents: balance, events: ledgerEvents });
   }
@@ -358,7 +585,32 @@ export function forecast(
     }
   }
 
-  const assumptionsHash = fnv1a(JSON.stringify({ graph, assumptions }));
+  const horizonEnd = ledger.length > 0 ? ledger[ledger.length - 1].date : startISO;
+  const goals: GoalProgress[] = goalNodes
+    .filter((n): n is Extract<PlanNode, { type: 'goal' }> => n.type === 'goal')
+    .map((g) => {
+      const atTarget = g.targetDate <= horizonEnd ? (savedAtTarget.get(g.id) ?? 0) : (saved.get(g.id) ?? 0);
+      return {
+        nodeId: g.id,
+        name: g.name,
+        targetCents: g.targetCents,
+        targetDate: g.targetDate,
+        savedCents: saved.get(g.id) ?? 0,
+        hitDate: hitDate.get(g.id) ?? null,
+        shortfallAtTargetCents: Math.max(0, g.targetCents - atTarget),
+      };
+    });
+  const debts: DebtProgress[] = debtNodes
+    .filter((n): n is Extract<PlanNode, { type: 'debt' }> => n.type === 'debt')
+    .map((d) => ({
+      nodeId: d.id,
+      name: d.name,
+      extraPaidCents: extraPaid.get(d.id) ?? 0,
+    }));
+
+  const assumptionsHash = opts.skipHash
+    ? 'skipped:fast-path'
+    : graphFingerprint(active, assumptions, [...disabled]);
 
   return {
     ledger,
@@ -366,7 +618,24 @@ export function forecast(
     firstNegativeDate,
     safeToSpendCents: pinchDay.balanceCents - assumptions.safetyBufferCents,
     assumptionsHash,
+    goals,
+    debts,
   };
+}
+
+/**
+ * Scenario-aware forecast: runs the scenario's graph with its per-scenario
+ * node toggles applied. Pure — the store layer owns scenario bookkeeping.
+ */
+export function forecastScenario(
+  scenario: Scenario,
+  assumptions: Assumptions,
+  opts: ForecastOptions = {},
+): ForecastResult {
+  return forecast(scenario.graph, assumptions, {
+    ...opts,
+    disabledNodeIds: [...(opts.disabledNodeIds ?? []), ...scenario.disabledNodeIds],
+  });
 }
 
 // ---------- node status / previews (real computed values for canvas cards) ----------
@@ -418,15 +687,22 @@ export interface DebtPayoff {
 
 /**
  * Amortized payoff projection for a debt node: monthly interest at aprBps/12,
- * then the minimum payment, until the balance clears. Returns null when the
- * minimum payment doesn't cover monthly interest (the balance never falls).
+ * then the minimum payment plus any extra monthly payment, until the balance
+ * clears. Returns null when the payment doesn't cover monthly interest
+ * (the balance never falls). The optimizer passes split-routed extra payments
+ * here to score "pay debt fastest" candidates.
  */
-export function projectDebtPayoff(debt: DebtNode, fromISO: ISODate = todayISO()): DebtPayoff | null {
+export function projectDebtPayoff(
+  debt: DebtNode,
+  fromISO: ISODate = todayISO(),
+  extraMonthlyCents: Cents = 0,
+): DebtPayoff | null {
   if (debt.balanceCents <= 0) {
     return { payoffDate: fromISO, months: 0, totalInterestCents: 0 };
   }
   const monthlyRate = debt.aprBps / 10000 / 12;
-  if (debt.minPaymentCents <= 0) return null;
+  const payment = debt.minPaymentCents + extraMonthlyCents;
+  if (payment <= 0) return null;
 
   let balance = debt.balanceCents;
   let totalInterest = 0;
@@ -434,9 +710,9 @@ export function projectDebtPayoff(debt: DebtNode, fromISO: ISODate = todayISO())
   const MAX_MONTHS = 1200; // 100 years — a guard, not a plan
   while (balance > 0 && months < MAX_MONTHS) {
     const interest = Math.round(balance * monthlyRate);
-    if (interest >= debt.minPaymentCents) return null; // never amortizes
+    if (interest >= payment) return null; // never amortizes
     totalInterest += interest;
-    balance = balance + interest - Math.min(debt.minPaymentCents, balance + interest);
+    balance = balance + interest - Math.min(payment, balance + interest);
     months++;
   }
   if (balance > 0) return null;

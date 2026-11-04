@@ -10,16 +10,19 @@ import { FlowCanvas } from './canvas/FlowCanvas';
 import { Palette } from './canvas/Palette';
 import { Inspector } from './canvas/Inspector';
 import { ForecastView } from './panels/ForecastView';
+import { ScenariosPanel } from './panels/ScenariosPanel';
+
+type RightTab = 'forecast' | 'scenarios' | 'inspector';
 
 function RightPanel() {
-  const [tab, setTab] = useState<'inspector' | 'forecast'>('forecast');
+  const [tab, setTab] = useState<RightTab>('forecast');
   const selectedNodeId = useGraphStore((s) => s.selectedNodeId);
   // Selecting a node opens its editor; the forecast stays one click away.
   useEffect(() => {
     if (selectedNodeId) setTab('inspector');
   }, [selectedNodeId]);
 
-  const tabBtn = (id: 'inspector' | 'forecast', label: string) => (
+  const tabBtn = (id: RightTab, label: string) => (
     <button
       key={id}
       className="flex-1 px-3 py-2 text-xs font-semibold"
@@ -39,10 +42,13 @@ function RightPanel() {
     <div className="flex h-full flex-col">
       <div className="flex border-b" style={{ borderColor: 'var(--border)' }} role="tablist">
         {tabBtn('forecast', 'Forecast')}
+        {tabBtn('scenarios', 'Scenarios')}
         {tabBtn('inspector', 'Inspector')}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="tabpanel">
-        {tab === 'forecast' ? <ForecastView /> : <Inspector />}
+        {tab === 'forecast' && <ForecastView />}
+        {tab === 'scenarios' && <ScenariosPanel />}
+        {tab === 'inspector' && <Inspector />}
       </div>
     </div>
   );

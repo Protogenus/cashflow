@@ -143,6 +143,8 @@ export interface Scenario {
   id: string;
   name: string;
   graph: PlanGraph;
+  /** Node ids excluded from this scenario's forecast (per-scenario on/off toggles). */
+  disabledNodeIds: NodeId[];
   isBaseline: boolean;
   createdAt: string;
   updatedAt: string;
@@ -216,6 +218,32 @@ export interface ForecastResult {
   safeToSpendCents: Cents;
   /** Ties the result to the exact graph + assumptions that produced it. */
   assumptionsHash: string;
+  /** Per-goal accumulation from split-routed / directly-wired income. */
+  goals: GoalProgress[];
+  /** Per-debt extra payments from split-routed / directly-wired income. */
+  debts: DebtProgress[];
+}
+
+/** How a savings goal fared over the horizon (see allocation semantics below). */
+export interface GoalProgress {
+  nodeId: NodeId;
+  name: string;
+  targetCents: Cents;
+  targetDate: ISODate;
+  /** Total routed into the goal over the horizon. */
+  savedCents: Cents;
+  /** First date savedCents reached the target (null when never). */
+  hitDate: ISODate | null;
+  /** max(0, target − saved on min(targetDate, horizon end)). */
+  shortfallAtTargetCents: Cents;
+}
+
+/** Extra principal payments a debt node received over the horizon. */
+export interface DebtProgress {
+  nodeId: NodeId;
+  name: string;
+  /** Total routed into the debt above any minimum payment. */
+  extraPaidCents: Cents;
 }
 
 export const DEFAULT_ASSUMPTIONS: Assumptions = {

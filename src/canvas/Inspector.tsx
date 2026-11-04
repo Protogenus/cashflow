@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { useGraphStore } from '../store/graphStore';
+import { useScenarioStore } from '../store/scenarioStore';
 import { todayISO } from '../engine/dates';
 import type {
   BusinessDay,
@@ -425,6 +426,8 @@ export function Inspector() {
   const updateNode = useGraphStore((s) => s.updateNode);
   const deleteNode = useGraphStore((s) => s.deleteNode);
   const { changed, blur } = useEditGroup();
+  const activeScenario = useScenarioStore((s) => s.scenarios.find((x) => x.id === s.activeScenarioId) ?? s.scenarios[0]);
+  const toggleNodeDisabled = useScenarioStore((s) => s.toggleNodeDisabled);
 
   if (!node) {
     return (
@@ -443,6 +446,16 @@ export function Inspector() {
           Delete
         </button>
       </div>
+
+      <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}
+        title="Excluded nodes are skipped by this scenario's forecast, optimizer, and Monte Carlo runs.">
+        <input
+          type="checkbox"
+          checked={!activeScenario.disabledNodeIds.includes(node.id)}
+          onChange={() => toggleNodeDisabled(node.id)}
+        />
+        Included in scenario "{activeScenario.name}"
+      </label>
 
       <Field label="Label">
         <TextInput

@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import { forecast, validateGraph, type ISODate, type LedgerDay } from '../engine';
 import { useGraphStore } from '../store/graphStore';
+import { useScenarioStore } from '../store/scenarioStore';
 import { useAssumptionsStore } from '../store/assumptionsStore';
 import { formatDateLong, formatDateShort, formatMoney, formatMoneyWhole } from '../lib/format';
 
@@ -65,17 +66,19 @@ export function ForecastView() {
   const setSelected = useGraphStore((s) => s.setSelected);
   const assumptions = useAssumptionsStore((s) => s.assumptions);
   const setAssumptions = useAssumptionsStore((s) => s.set);
+  const activeScenario = useScenarioStore((s) => s.scenarios.find((x) => x.id === s.activeScenarioId) ?? s.scenarios[0]);
+  const disabledNodeIds = activeScenario.disabledNodeIds;
 
   const validation = useMemo(() => validateGraph({ nodes, edges }), [nodes, edges]);
 
   const result = useMemo(() => {
     if (!validation.valid) return null;
     try {
-      return forecast({ nodes, edges }, assumptions);
+      return forecast({ nodes, edges }, assumptions, { disabledNodeIds });
     } catch {
       return null; // unreachable when validation passes; never a silent wrong chart
     }
-  }, [nodes, edges, assumptions, validation.valid]);
+  }, [nodes, edges, assumptions, disabledNodeIds, validation.valid]);
 
   const chart = useMemo(() => {
     if (!result) return null;
