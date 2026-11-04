@@ -16,7 +16,7 @@ export interface CFNodeData extends Record<string, unknown> {
   /** Excluded from the active scenario's forecast (milestone 4). */
   disabled: boolean;
   /** Timelapse frame pulse (canvas money-flow playback) — null when idle. */
-  flowPulse?: { amountCents: number; kind: 'income' | 'expense' | 'split'; note?: string } | null;
+  flowPulse?: { amountCents: number; kind: 'income' | 'expense' | 'split' | 'balance'; note?: string } | null;
 }
 
 interface NodeProps {
@@ -55,14 +55,17 @@ function Status({ status }: { status: CardStatus }) {
 }
 
 function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulse']> }) {
-  const sign = pulse.amountCents < 0 ? '−' : '+';
+  const isBalance = pulse.kind === 'balance';
+  const sign = pulse.amountCents < 0 ? '−' : isBalance ? '' : '+';
   const abs = Math.abs(pulse.amountCents);
   const d = Math.floor(abs / 100);
   const label = `${sign}$${d.toLocaleString('en-US')}`;
   return (
     <span className={`cf-flow-chip ${pulse.kind}`} aria-hidden="true">
       {label}
-      {pulse.note && <span className="cf-flow-note">{pulse.note}</span>}
+      {(pulse.note || isBalance) && (
+        <span className="cf-flow-note">{isBalance ? 'balance' : pulse.note}</span>
+      )}
     </span>
   );
 }

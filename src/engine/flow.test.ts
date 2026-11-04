@@ -72,6 +72,7 @@ describe('flowFrames', () => {
     // Payday is day index 2 (Nov 5): balance jumps, pulse fires.
     expect(frames[2].balanceCents).toBe(285000);
     expect(frames[2].pulses).toEqual([
+      { nodeId: 'bal', amountCents: 285000, kind: 'balance' },
       { nodeId: 'pay', amountCents: 185000, kind: 'income' },
     ]);
     expect(frames[2].summary).toMatch(/Paycheck/);
@@ -108,6 +109,7 @@ describe('flowFrames', () => {
       OPTS,
     );
     expect(frames[2].pulses).toEqual([
+      { nodeId: 'bal', amountCents: -40000, kind: 'balance' },
       { nodeId: 'rent', amountCents: -140000, kind: 'expense' },
     ]);
     expect(frames[2].summary).toMatch(/Rent/);
@@ -120,7 +122,9 @@ describe('flowFrames', () => {
       { windowDays: 3 },
     );
     expect(frames[0].transfers).toEqual([]);
-    expect(frames[0].pulses).toEqual([]);
+    expect(frames[0].pulses).toEqual([
+      { nodeId: 'bal', amountCents: 100000, kind: 'balance' },
+    ]);
     expect(frames[0].summary).toMatch(/no money moved/);
   });
 

@@ -155,10 +155,19 @@ body {
 .cf-node-split .cf-node-icon { color: var(--node-logic); }
 
 /* timelapse money-flow: glowing animated edges + pulsing amount chips */
-.cf-edge-flow .react-flow__edge-path {
+.cf-edge-flow .react-flow__edge-path,
+.react-flow__edge-path.cf-edge-flow {
   stroke: var(--accent);
   stroke-width: 3;
 }
+/* gamified money dots traveling into the target node (timelapse) */
+.cf-money-dot {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.cf-edge-income .cf-money-dot { fill: var(--income); }
+.cf-edge-expense .cf-money-dot { fill: var(--expense); }
 .cf-flow-chip {
   position: absolute;
   top: -14px;
@@ -179,6 +188,7 @@ body {
 .cf-flow-chip.income { color: var(--income); }
 .cf-flow-chip.expense { color: var(--expense); }
 .cf-flow-chip.split { color: var(--node-logic); }
+.cf-flow-chip.balance { color: var(--accent); }
 .cf-flow-chip .cf-flow-note {
   display: block;
   font-weight: 400;
@@ -337,3 +347,23 @@ html, body {
     min-height: 40px;
   }
 }
+
+/* ---- thin styled scrollbars (site style) ---- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+  background-clip: content-box;
+  border: 2px solid transparent;
+}
+*::-webkit-scrollbar-corner { background: transparent; }

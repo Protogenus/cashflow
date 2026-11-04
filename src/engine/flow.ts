@@ -51,9 +51,9 @@ export interface FlowTransfer {
 
 export interface FlowPulse {
   nodeId: NodeId;
-  /** Signed amount for the floating chip (+income, −expense). */
+  /** Signed amount for the floating chip (+income, −expense, balance level). */
   amountCents: Cents;
-  kind: 'income' | 'expense' | 'split';
+  kind: 'income' | 'expense' | 'split' | 'balance';
   /** Extra line under the chip, e.g. "$370 kept in balance". */
   note?: string;
 }
@@ -202,6 +202,7 @@ export function flowFrames(
     startDate: opts.startDate,
   });
   const plan = buildAllocationPlan(active);
+  const balanceNode = active.nodes.find((n) => n.type === 'startingBalance');
   const byName = new Map<NodeId, string>(
     active.nodes.map((n) => [n.id, n.label || ('name' in n ? n.name : n.id)]),
   );
@@ -211,6 +212,11 @@ export function flowFrames(
   for (let d = 0; d < windowDays; d++) {
     const day = res.ledger[d];
     const pulses: FlowPulse[] = [];
+    // The bank-account node always shows the live end-of-day balance, so the
+    // timelapse visibly moves money instead of leaving the card static.
+    if (balanceNode) {
+      pulses.push({ nodeId: balanceNode.id, amountCents: day.balanceCents, kind: 'balance' });
+    }
     const transfers: FlowTransfer[] = [];
     const bits: string[] = [];
 

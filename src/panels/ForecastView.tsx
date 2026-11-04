@@ -128,7 +128,7 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
   return (
     <div className="flex flex-col gap-4 p-4">
       {/* horizon selector */}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Horizon</span>
         <div className="flex gap-1" role="group" aria-label="Forecast horizon">
           {HORIZONS.map((h) => (
@@ -142,13 +142,13 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
             </button>
           ))}
         </div>
-        <label className="ml-auto flex items-center gap-1 text-xs" style={{ color: 'var(--text-muted)' }}>
+        <label className="ml-auto flex items-center gap-1 whitespace-nowrap text-xs" style={{ color: 'var(--text-muted)' }}>
           Buffer $
           <input
             type="number"
             min={0}
             step={50}
-            className="w-20 rounded border px-1 py-0.5 text-xs money"
+            className="w-20 max-w-full rounded border px-1 py-0.5 text-xs money"
             style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
             value={assumptions.safetyBufferCents / 100}
             onChange={(e) => {

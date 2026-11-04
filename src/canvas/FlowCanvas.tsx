@@ -9,6 +9,7 @@ import {
   BackgroundVariant,
   Controls,
   ReactFlow,
+  SelectionMode,
   useReactFlow,
   type Connection,
   type Edge,
@@ -22,6 +23,7 @@ import { useFlowStore } from '../store/flowStore';
 import { findOrphanedNodes } from '../engine';
 import { cardStatus } from './cardStatus';
 import { nodeTypes, type CFNodeData } from './nodes';
+import { FlowMoneyEdge } from './FlowMoneyEdge';
 import { NODE_META, createNode } from './templates';
 import type { NodeType, PlanNode } from '../engine/types';
 
@@ -55,6 +57,16 @@ export function FlowCanvas() {
     () => new Map((flowFrame?.pulses ?? []).map((p) => [p.nodeId, p])),
     [flowFrame],
   );
+  /** Edge id → amount carried on the current frame (drives money-dot count). */
+  const flowAmounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const t of flowFrame?.transfers ?? []) {
+      for (const id of t.edgeIds) m.set(id, (m.get(id) ?? 0) + t.amountCents);
+    }
+    return m;
+  }, [flowFrame]);
+
+  const edgeTypes = useMemo(() => ({ flow: FlowMoneyEdge }), []);
   const { screenToFlowPosition } = useReactFlow();
 
   const graph = useMemo(() => ({ nodes, edges }), [nodes, edges]);
@@ -95,16 +107,20 @@ export function FlowCanvas() {
         const flowing = flowEdgeIds.has(e.id);
         return {
           id: e.id,
+          type: 'flow',
           source: e.source,
           target: e.target,
           sourceHandle: e.sourceHandle,
           targetHandle: e.targetHandle,
-          className: `${edgeClass(src)}${flowing ? ' cf-edge-flow' : ''}`,
-          animated: flowing,
+          data: {
+            flowing,
+            tone: edgeClass(src),
+            amountCents: flowAmounts.get(e.id) ?? 0,
+          },
           selected: e.id === selectedEdgeId,
         };
       }),
-    [edges, nodes, selectedEdgeId, flowEdgeIds],
+    [edges, nodes, selectedEdgeId, flowEdgeIds, flowAmounts],
   );
 
   const onNodesChange = useCallback(
@@ -178,7 +194,9 @@ export function FlowCanvas() {
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       selectionOnDrag
+      selectionMode={SelectionMode.Partial}
       panOnDrag={[1, 2]}
+      edgeTypes={edgeTypes}
       onConnect={onConnect}
       onNodeDragStart={() => useGraphStore.getState().beginDrag()}
       onNodeDragStop={() => useGraphStore.getState().endDrag()}
