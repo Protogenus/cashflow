@@ -53,7 +53,7 @@ export interface FlowPulse {
   nodeId: NodeId;
   /** Signed amount for the floating chip (+income, −expense, balance level). */
   amountCents: Cents;
-  kind: 'income' | 'expense' | 'split' | 'balance';
+  kind: 'income' | 'expense' | 'split' | 'balance' | 'outflow';
   /** Extra line under the chip, e.g. "$370 kept in balance". */
   note?: string;
 }
@@ -233,10 +233,33 @@ export function flowFrames(
         }
       } else if (ev.kind === 'expense') {
         pulses.push({ nodeId: ev.nodeId, amountCents: ev.amountCents, kind: 'expense' });
+        if (balanceNode) {
+          // Bills are paid straight out of the balance — no drawn edge exists,
+          // so the timelapse draws a virtual route (edgeIds: []) from the
+          // account to the bill. This is what the forecast walk computes.
+          transfers.push({
+            fromId: balanceNode.id,
+            toId: ev.nodeId,
+            edgeIds: [],
+            amountCents: -ev.amountCents as Cents,
+            label: `${ev.name}`,
+          });
+        }
         bits.push(`${ev.name} −${money(-ev.amountCents)}`);
       }
       // 'transfer' events are the walk's bookkeeping for the same money the
       // split outputs above already describe — skipping keeps the readout clean.
+    }
+
+    // Money leaving a node gets its own chip, so the timelapse shows cash
+    // draining out of the source — not just arriving.
+    for (const t of transfers) {
+      pulses.push({
+        nodeId: t.fromId,
+        amountCents: -t.amountCents as Cents,
+        kind: 'outflow',
+        note: `→ ${byName.get(t.toId) ?? t.toId}`,
+      });
     }
 
     const dateLabel = new Date(day.date + 'T12:00:00').toLocaleDateString(undefined, {

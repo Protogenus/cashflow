@@ -15,8 +15,8 @@ export interface CFNodeData extends Record<string, unknown> {
   orphaned: boolean;
   /** Excluded from the active scenario's forecast (milestone 4). */
   disabled: boolean;
-  /** Timelapse frame pulse (canvas money-flow playback) — null when idle. */
-  flowPulse?: { amountCents: number; kind: 'income' | 'expense' | 'split' | 'balance'; note?: string } | null;
+  /** Timelapse frame pulses (canvas money-flow playback) — empty when idle. */
+  flowPulses?: { amountCents: number; kind: 'income' | 'expense' | 'split' | 'balance' | 'outflow'; note?: string }[];
 }
 
 interface NodeProps {
@@ -54,7 +54,7 @@ function Status({ status }: { status: CardStatus }) {
   );
 }
 
-function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulse']> }) {
+function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulses']>[number] }) {
   const isBalance = pulse.kind === 'balance';
   const sign = pulse.amountCents < 0 ? '−' : isBalance ? '' : '+';
   const abs = Math.abs(pulse.amountCents);
@@ -66,6 +66,17 @@ function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulse']> }) {
       {(pulse.note || isBalance) && (
         <span className="cf-flow-note">{isBalance ? 'balance' : pulse.note}</span>
       )}
+    </span>
+  );
+}
+
+function FlowChips({ pulses }: { pulses: NonNullable<CFNodeData['flowPulses']> }) {
+  if (pulses.length === 0) return null;
+  return (
+    <span className="cf-flow-chips" aria-hidden="true">
+      {pulses.map((p, i) => (
+        <FlowChip key={i} pulse={p} />
+      ))}
     </span>
   );
 }
@@ -89,7 +100,7 @@ function RectShell({
       {orphaned && <OrphanBadge />}
       <Label node={node} />
       <Status status={status} />
-      {data.flowPulse && <FlowChip pulse={data.flowPulse} />}
+      {data.flowPulses && <FlowChips pulses={data.flowPulses} />}
       {handles}
       {outputs && (
         <>

@@ -94,10 +94,17 @@ describe('flowFrames', () => {
     expect(toGoal?.amountCents).toBe(37000);
     expect(toGoal?.edgeIds).toEqual(['e2']);
     // 80% output has no wired edge: kept in balance, noted on the split pulse.
-    const splitPulse = payday.pulses.find((p) => p.nodeId === 's');
+    const splitPulse = payday.pulses.find((p) => p.nodeId === 's' && p.kind === 'split');
     expect(splitPulse?.kind).toBe('split');
     expect(splitPulse?.amountCents).toBe(148000);
     expect(splitPulse?.note).toMatch(/kept in balance/);
+    // Outflow chips: money visibly leaves the paycheck and the split node.
+    const payOut = payday.pulses.find((p) => p.nodeId === 'pay' && p.kind === 'outflow');
+    expect(payOut?.amountCents).toBe(-185000);
+    expect(payOut?.note).toBe('→ Paycheck split');
+    const splitOut = payday.pulses.find((p) => p.nodeId === 's' && p.kind === 'outflow');
+    expect(splitOut?.amountCents).toBe(-37000);
+    expect(splitOut?.note).toBe('→ Savings');
     expect(payday.summary).toMatch(/20% \(\$370\) → Savings/);
     expect(payday.summary).toMatch(/\$1,480 kept in balance/);
   });
@@ -111,8 +118,19 @@ describe('flowFrames', () => {
     expect(frames[2].pulses).toEqual([
       { nodeId: 'bal', amountCents: -40000, kind: 'balance' },
       { nodeId: 'rent', amountCents: -140000, kind: 'expense' },
+      { nodeId: 'bal', amountCents: -140000, kind: 'outflow', note: '→ Rent' },
     ]);
     expect(frames[2].summary).toMatch(/Rent/);
+    // The bill payment is a virtual transfer: balance → bill, no drawn edge.
+    expect(frames[2].transfers).toEqual([
+      {
+        fromId: 'bal',
+        toId: 'rent',
+        edgeIds: [],
+        amountCents: 140000,
+        label: 'Rent',
+      },
+    ]);
   });
 
   it('reports quiet days honestly', () => {

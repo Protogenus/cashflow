@@ -24,6 +24,7 @@ import { findOrphanedNodes } from '../engine';
 import { cardStatus } from './cardStatus';
 import { nodeTypes, type CFNodeData } from './nodes';
 import { FlowMoneyEdge } from './FlowMoneyEdge';
+import { FlowVirtualOverlay } from './FlowVirtualOverlay';
 import { NODE_META, createNode } from './templates';
 import type { NodeType, PlanNode } from '../engine/types';
 
@@ -54,10 +55,15 @@ export function FlowCanvas() {
     () => new Set((flowFrame?.transfers ?? []).flatMap((t) => t.edgeIds)),
     [flowFrame],
   );
-  const flowPulses = useMemo(
-    () => new Map((flowFrame?.pulses ?? []).map((p) => [p.nodeId, p])),
-    [flowFrame],
-  );
+  const flowPulses = useMemo(() => {
+    const m = new Map<string, { amountCents: number; kind: 'income' | 'expense' | 'split' | 'balance' | 'outflow'; note?: string }[]>();
+    for (const p of flowFrame?.pulses ?? []) {
+      const arr = m.get(p.nodeId) ?? [];
+      arr.push(p);
+      m.set(p.nodeId, arr);
+    }
+    return m;
+  }, [flowFrame]);
   /** Edge id → amount carried on the current frame (drives money-dot count). */
   const flowAmounts = useMemo(() => {
     const m = new Map<string, number>();
@@ -95,7 +101,7 @@ export function FlowCanvas() {
             (status.secondary ? `, ${status.secondary}` : '') +
             (disabled ? ', excluded from this scenario' : '') +
             (orphanIds.has(n.id) ? ', not connected' : ''),
-          data: { node: n, status, orphaned: orphanIds.has(n.id), disabled, flowPulse: flowPulses.get(n.id) ?? null },
+          data: { node: n, status, orphaned: orphanIds.has(n.id), disabled, flowPulses: flowPulses.get(n.id) ?? [] },
         };
       }),
     [nodes, selectedNodeIds, orphanIds, disabledIds, graph, flowPulses],
@@ -219,6 +225,7 @@ export function FlowCanvas() {
       aria-label="Money plan canvas. Drag on empty canvas to select several nodes, then drag them to move together. Tab moves between nodes; Enter edits the focused node."
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} />
+      <FlowVirtualOverlay />
       <Controls showInteractive={false} />
     </ReactFlow>
   );
