@@ -13,6 +13,7 @@
  */
 import { create } from 'zustand';
 import { useGraphStore } from './graphStore';
+import { createStarterGraph } from '../canvas/templates';
 import type { NodeId, PlanEdge, PlanNode, Scenario } from '../engine';
 
 interface ScenarioStore {
@@ -28,6 +29,13 @@ interface ScenarioStore {
   /** Flip a node's include/exclude toggle within the active scenario. */
   toggleNodeDisabled: (nodeId: NodeId) => void;
   isNodeDisabled: (nodeId: NodeId) => boolean;
+  /**
+   * Replace the whole scenario list (boot hydration, import, reset).
+   * Loads the active scenario's graph into the editor and resets undo.
+   */
+  hydrate: (scenarios: Scenario[], activeScenarioId: string) => void;
+  /** Back to a single fresh baseline scenario (used by "Reset all data"). */
+  resetToStarter: () => void;
 }
 
 function nowISO(): string {
@@ -159,5 +167,19 @@ export const useScenarioStore = create<ScenarioStore>()((set, get) => {
     },
 
     isNodeDisabled: (nodeId) => activeOf(get()).disabledNodeIds.includes(nodeId),
+
+    hydrate: (scenarios, activeScenarioId) => {
+      const list = structuredClone(scenarios);
+      const active = list.find((s) => s.id === activeScenarioId) ?? list[0];
+      if (!active) return;
+      set({ scenarios: list, activeScenarioId: active.id });
+      loadIntoGraph(active);
+    },
+
+    resetToStarter: () => {
+      const { nodes, edges } = createStarterGraph();
+      // '' matches nothing, so hydrate falls back to the single fresh scenario.
+      get().hydrate([makeScenario('Base', nodes, edges, true)], '');
+    },
   };
 });

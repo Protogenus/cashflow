@@ -20,14 +20,16 @@ import { forecast, validateGraph, type ISODate, type LedgerDay } from '../engine
 import { useGraphStore } from '../store/graphStore';
 import { useScenarioStore } from '../store/scenarioStore';
 import { useAssumptionsStore } from '../store/assumptionsStore';
-import { formatDateLong, formatDateShort, formatMoney, formatMoneyWhole } from '../lib/format';
+import { currencySymbol, formatDateLong, formatDateShort, formatMoney, formatMoneyWhole } from '../lib/format';
+import { DISCLAIMER_SHORT } from './AssumptionsPanel';
 
 const HORIZONS = [30, 60, 90];
 
 function axisMoney(v: number): string {
+  const sym = currencySymbol();
   const abs = Math.abs(v);
-  if (abs >= 1000) return `$${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
-  return `$${Math.round(v)}`;
+  if (abs >= 1000) return `${sym}${(v / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+  return `${sym}${Math.round(v)}`;
 }
 
 function ForecastTooltip({ active, payload, label, byDate }: {
@@ -60,7 +62,7 @@ function ForecastTooltip({ active, payload, label, byDate }: {
   );
 }
 
-export function ForecastView() {
+export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => void }) {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
   const setSelected = useGraphStore((s) => s.setSelected);
@@ -263,10 +265,20 @@ export function ForecastView() {
 
           {/* assumptions (visible, per RESEARCH.md §3) */}
           <div className="text-[11px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Based on your inputs. Income lands before bills on the same day. Paychecks shift to the
-            prior Friday and bills to the next Monday when they fall on weekends. Variable bills use
-            their typical value. A bill on the 31st lands on the last day of short months — never
-            skipped. Not financial advice.
+            Assumptions: income lands before bills on the same day; paychecks shift to the prior
+            Friday and bills to the next Monday on weekends; variable bills use their typical value;
+            a bill on the 31st lands on the last day of short months — never skipped.{' '}
+            {onOpenAssumptions && (
+              <button
+                className="underline"
+                style={{ color: 'var(--accent)' }}
+                onClick={onOpenAssumptions}
+              >
+                Details
+              </button>
+            )}
+            <br />
+            {DISCLAIMER_SHORT}
           </div>
         </>
       )}

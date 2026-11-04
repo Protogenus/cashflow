@@ -34,6 +34,7 @@ import { useAssumptionsStore } from '../store/assumptionsStore';
 import { useResultsStore } from '../store/resultsStore';
 import { useSimWorker } from '../workers/useSimWorker';
 import { formatDateLong, formatDateShort, formatMoneyWhole } from '../lib/format';
+import { DISCLAIMER_SHORT } from './AssumptionsPanel';
 
 function axisMoney(v: number): string {
   const abs = Math.abs(v);
@@ -324,7 +325,7 @@ function ShockEditor() {
   );
 }
 
-export function MonteCarloView() {
+export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () => void }) {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
   const assumptions = useAssumptionsStore((s) => s.assumptions);
@@ -616,11 +617,21 @@ export function MonteCarloView() {
 
           {/* assumptions */}
           <div className="text-[11px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-            Based on your inputs. Variable bills sampled from min/typical/max with a
-            triangular distribution; income lands before bills on the same day;
-            paychecks shift to the prior Friday and bills to the next Monday on
-            weekends. Doesn't include taxes, market changes, or spending you
-            haven't entered. Not financial advice.
+            Assumptions: variable bills sampled from min/typical/max (triangular); income lands
+            before bills on the same day; paychecks shift to the prior Friday and bills to the
+            next Monday on weekends. Doesn&apos;t include taxes, market changes, or spending you
+            haven&apos;t entered.{' '}
+            {onOpenAssumptions && (
+              <button
+                className="underline"
+                style={{ color: 'var(--accent)' }}
+                onClick={onOpenAssumptions}
+              >
+                Details
+              </button>
+            )}
+            <br />
+            {DISCLAIMER_SHORT}
           </div>
         </>
       )}

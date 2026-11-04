@@ -146,6 +146,18 @@ Format for each entry:
 - **Decision:** `evaluateAlerts()` runs one deterministic forecast (honoring the active scenario's disabled-node toggles) and evaluates all enabled rules against it. Severity ordering is critical > warning > info, then earliest firing date. Explanations reuse the shared `findDrivers` analysis so alerts and the forecast panel never disagree about what drove a low point.
 - **Consequences:** Alerts recompute live on every graph/assumptions change (one forecast — cheap). MC-based alerting is a later feature if users ask for it.
 
+## 2026-11-03 — Persistence: versioned localStorage schema v1
+- **Status:** decided
+- **Context:** ARCHITECTURE.md sketched a `schemaVersion: 3` persisted shape with an acknowledged-alerts list; milestones 1–9 built a different reality (rules engine instead of acknowledged alerts, settings store, onboarding flag). The real schema needed pinning.
+- **Decision:** Key `cashflow-planner/v1` holds `{ schemaVersion: 1, scenarios, activeScenarioId, assumptions, rules, settings, savedAt }`. Boot hydrates every store via `applyPersistedState()`; changes autosave debounced 500ms (skipped until hydration completes so seed state never overwrites a real save). Corrupt/unparseable data is backed up to `cashflow-planner/v1.corrupt` and the app starts fresh with a dismissible notice — never a crash. Migrations are pure chained functions; the v1→v2 pattern is documented in `migratePersisted` (unknown future versions are rejected, never guessed). Export downloads the same versioned JSON; import validates schema version + every scenario graph through the engine validator before anything is applied (replace = full wipe, merge = imported scenarios appended with fresh ids). "Reset all data" requires typing RESET.
+- **Consequences:** Export files stay importable across versions via the migration chain. The `.corrupt` backup keeps only the latest copy.
+
+## 2026-11-03 — Settings own the theme; header toggle removed
+- **Status:** decided
+- **Context:** The header had its own light/dark toggle (local state); milestone 10 adds a real theme setting (light/dark/system) plus reduced-motion and currency.
+- **Decision:** One source of truth: `settingsStore.theme`. The header toggle was removed; theme lives in the Settings tab (also reachable via the header ⚙ button). Currency is display-only (symbol prefix, no conversion); changing it re-renders the app via a store subscription so all money figures update. Reduced motion toggles a `reduce-motion` class with an animation/transition kill-switch, defaulting to the OS preference.
+- **Consequences:** No two theme states to disagree. The old per-session toggle is gone — users who used it now pick once in Settings.
+
 ## 2026-11-03 — Onboarding completion is a persisted setting; templates replace the canvas
 - **Status:** decided
 - **Context:** First-run onboarding must show once (no saved data → overlay), be skippable, and be re-runnable from Settings. Template loads and the onboarding-built graph replace the whole canvas.

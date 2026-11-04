@@ -1,11 +1,15 @@
 /**
- * App.tsx — shell: header (undo/redo, validation badge, theme), palette,
- * canvas, inspector. Milestone 3 adds the forecast view as a right-panel tab.
+ * App.tsx — shell: header (undo/redo, validation badge, templates), palette,
+ * canvas, right-panel tabs. Milestone 10 owns boot hydration, the debounced
+ * autosave, theme, and reduced-motion.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
 import { validateGraph } from './engine';
 import { useGraphStore } from './store/graphStore';
+import { useScenarioStore } from './store/scenarioStore';
+import { useAssumptionsStore } from './store/assumptionsStore';
+import { useAlertsStore } from './store/alertsStore';
 import { FlowCanvas } from './canvas/FlowCanvas';
 import { Palette } from './canvas/Palette';
 import { Inspector } from './canvas/Inspector';
@@ -15,24 +19,34 @@ import { ScenariosPanel } from './panels/ScenariosPanel';
 import { OptimizerView } from './panels/OptimizerView';
 import { MonteCarloView } from './panels/MonteCarloView';
 import { TradeoffView } from './panels/TradeoffView';
+import { AssumptionsPanel } from './panels/AssumptionsPanel';
+import { SettingsPanel } from './panels/SettingsPanel';
 import { Onboarding } from './components/Onboarding';
 import { TemplatePicker } from './components/TemplatePicker';
 import { useSettingsStore } from './store/settingsStore';
+import {
+  applyPersistedState,
+  browserStorage,
+  collectPersistedState,
+  loadPersisted,
+  savePersisted,
+} from './persistence';
 
-type RightTab = 'forecast' | 'alerts' | 'scenarios' | 'optimizer' | 'montecarlo' | 'tradeoff' | 'inspector';
+type RightTab =
+  | 'forecast' | 'alerts' | 'scenarios' | 'optimizer' | 'montecarlo'
+  | 'tradeoff' | 'inspector' | 'assumptions' | 'settings';
 
-function RightPanel() {
-  const [tab, setTab] = useState<RightTab>('forecast');
+function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => void }) {
   const selectedNodeId = useGraphStore((s) => s.selectedNodeId);
   // Selecting a node opens its editor; the forecast stays one click away.
   useEffect(() => {
     if (selectedNodeId) setTab('inspector');
-  }, [selectedNodeId]);
+  }, [selectedNodeId, setTab]);
 
   const tabBtn = (id: RightTab, label: string) => (
     <button
       key={id}
-      className="flex-1 px-3 py-2 text-xs font-semibold"
+      className="flex-1 px-1 py-2 text-[11px] font-semibold"
       style={{
         color: tab === id ? 'var(--text)' : 'var(--text-muted)',
         borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
@@ -40,6 +54,7 @@ function RightPanel() {
       onClick={() => setTab(id)}
       aria-selected={tab === id}
       role="tab"
+      title={label}
     >
       {label}
     </button>
@@ -52,29 +67,25 @@ function RightPanel() {
         {tabBtn('alerts', 'Alerts')}
         {tabBtn('scenarios', 'Scenarios')}
         {tabBtn('optimizer', 'Optimizer')}
-        {tabBtn('montecarlo', 'Monte Carlo')}
+        {tabBtn('montecarlo', 'MC')}
         {tabBtn('tradeoff', 'Tradeoff')}
         {tabBtn('inspector', 'Inspector')}
+        {tabBtn('assumptions', 'Assumptions')}
+        {tabBtn('settings', 'Settings')}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="tabpanel">
-        {tab === 'forecast' && <ForecastView />}
+        {tab === 'forecast' && <ForecastView onOpenAssumptions={() => setTab('assumptions')} />}
         {tab === 'alerts' && <AlertsPanel />}
         {tab === 'scenarios' && <ScenariosPanel />}
         {tab === 'optimizer' && <OptimizerView />}
-        {tab === 'montecarlo' && <MonteCarloView />}
+        {tab === 'montecarlo' && <MonteCarloView onOpenAssumptions={() => setTab('assumptions')} />}
         {tab === 'tradeoff' && <TradeoffView />}
         {tab === 'inspector' && <Inspector />}
+        {tab === 'assumptions' && <AssumptionsPanel />}
+        {tab === 'settings' && <SettingsPanel />}
       </div>
     </div>
   );
-}
-
-function useDarkMode() {
-  const [dark, setDark] = useState(false);
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
-  }, [dark]);
-  return { dark, setDark };
 }
 
 function ValidationBadge() {
@@ -134,13 +145,85 @@ function Toast() {
 }
 
 export function App() {
-  const { dark, setDark } = useDarkMode();
   const undo = useGraphStore((s) => s.undo);
   const redo = useGraphStore((s) => s.redo);
   const pastLen = useGraphStore((s) => s.past.length);
   const futureLen = useGraphStore((s) => s.future.length);
   const onboardingComplete = useSettingsStore((s) => s.onboardingComplete);
+  const theme = useSettingsStore((s) => s.theme);
+  const reducedMotion = useSettingsStore((s) => s.reducedMotion);
+  // Subscribe so every panel re-renders when the currency symbol changes.
+  useSettingsStore((s) => s.currencySymbol);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [tab, setTab] = useState<RightTab>('forecast');
+  const [corruptNotice, setCorruptNotice] = useState<string | null>(null);
+  const hydratedRef = useRef(false);
+
+  // Theme: light / dark / system (follows the OS setting).
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const dark = theme === 'dark' || (theme === 'system' && mq.matches);
+      document.documentElement.classList.toggle('dark', dark);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [theme]);
+
+  // Reduced motion: reduce / full / system (follows the OS setting).
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => {
+      const reduce = reducedMotion === 'reduce' || (reducedMotion === 'system' && mq.matches);
+      document.documentElement.classList.toggle('reduce-motion', reduce);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, [reducedMotion]);
+
+  // Boot: hydrate stores from the autosave (once). Corrupt data is backed up
+  // by loadPersisted and reported — the app never crashes on load.
+  useEffect(() => {
+    const res = loadPersisted(browserStorage());
+    if (res.kind === 'ok') {
+      applyPersistedState(res.state);
+    } else if (res.kind === 'corrupt') {
+      setCorruptNotice(res.notice);
+    }
+    hydratedRef.current = true;
+  }, []);
+
+  // Autosave: debounced 500ms after any store change (skipped until hydrated
+  // so the seed state never overwrites a real save).
+  useEffect(() => {
+    const storage = browserStorage();
+    let timer: number | undefined;
+    const schedule = () => {
+      if (!hydratedRef.current) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const ok = savePersisted(storage, collectPersistedState());
+        if (!ok) {
+          useGraphStore.setState({
+            toast: "Couldn't save to this browser's storage — export JSON to back up your plan.",
+          });
+        }
+      }, 500);
+    };
+    const unsubs = [
+      useGraphStore.subscribe(schedule),
+      useScenarioStore.subscribe(schedule),
+      useAssumptionsStore.subscribe(schedule),
+      useAlertsStore.subscribe(schedule),
+      useSettingsStore.subscribe(schedule),
+    ];
+    return () => {
+      window.clearTimeout(timer);
+      unsubs.forEach((u) => u());
+    };
+  }, []);
 
   // Global undo/redo shortcuts (canvas Delete handling lives in FlowCanvas).
   useEffect(() => {
@@ -189,13 +272,26 @@ export function App() {
             </button>
             <button
               className="cf-btn"
-              onClick={() => setDark(!dark)}
-              title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
+              onClick={() => setTab('settings')}
+              title="Settings"
             >
-              {dark ? '☀ Light' : '◐ Dark'}
+              ⚙ Settings
             </button>
           </div>
         </header>
+        {corruptNotice && (
+          <div
+            className="border-b px-4 py-2 text-xs"
+            style={{ borderColor: 'var(--warning)', background: 'var(--surface-2)' }}
+            role="alert"
+          >
+            <span className="font-semibold">Heads up: </span>
+            {corruptNotice}
+            <button className="cf-btn ml-2 px-2 py-0.5 text-xs" onClick={() => setCorruptNotice(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="flex min-h-0 flex-1">
           <div className="border-r" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
@@ -209,7 +305,7 @@ export function App() {
             style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
             aria-label="Inspector and forecast"
           >
-            <RightPanel />
+            <RightPanel tab={tab} setTab={setTab} />
           </aside>
         </div>
         <Toast />

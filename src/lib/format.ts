@@ -4,6 +4,20 @@
  */
 import { parseISODate } from '../engine/dates';
 import type { ISODate } from '../engine/types';
+import { useSettingsStore } from '../store/settingsStore';
+
+/**
+ * The user's chosen display symbol (settings → currency). Display only:
+ * amounts are never converted, only re-prefixed. Safe to call outside
+ * React — reads the store directly.
+ */
+export function currencySymbol(): string {
+  try {
+    return useSettingsStore.getState().currencySymbol || '$';
+  } catch {
+    return '$';
+  }
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS_LONG = [
@@ -11,14 +25,19 @@ const MONTHS_LONG = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-/** $1,850 or $1,850.50; negatives render as −$1,850 (ledger detail keeps cents). */
-export function formatMoney(cents: number): string {
+/**
+ * $1,850 or $1,850.50 (symbol follows the currency setting); negatives
+ * render as −$1,850 (ledger detail keeps cents).
+ */
+export function formatMoney(cents: number, symbol: string = currencySymbol()): string {
   const sign = cents < 0 ? '−' : '';
   const abs = Math.abs(cents);
   const dollars = Math.floor(abs / 100);
   const rem = abs % 100;
   const grouped = dollars.toLocaleString('en-US');
-  return rem === 0 ? `${sign}$${grouped}` : `${sign}$${grouped}.${String(rem).padStart(2, '0')}`;
+  return rem === 0
+    ? `${sign}${symbol}${grouped}`
+    : `${sign}${symbol}${grouped}.${String(rem).padStart(2, '0')}`;
 }
 
 /** Aggressively rounded headline money: $41,800 (never $41,832.17). */

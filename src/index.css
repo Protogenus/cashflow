@@ -259,3 +259,11 @@ body {
   padding: 7px 9px; font-size: 12px; cursor: grab;
 }
 .cf-palette-item:hover { background: var(--surface-2); border-color: var(--accent); }
+
+/* Reduced motion: kill animations and transitions app-wide (settings → motion). */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
