@@ -118,6 +118,12 @@ Format for each entry:
 - **Decision:** Each run's stream is `mulberry32(masterSeed ^ imul(runIndex+1, 0x9E3779B9))` — order-independent by construction. Stream order per run: variable draws first, then shock draws (DECISIONS.md). A bill is "covered" when the day's opening balance >= the bill amount (end-of-previous-day, or the starting balance on day 0); per-node probability = share of runs where every occurrence was covered; rent = /rent/i expense else largest monthly expense, reported by calendar month. Failed-trial drill-down capped at 200 stored rows (true count kept). Worker protocol: `{id, kind:'montecarlo', graph, assumptions, options}` in; progress/done/error out; cancel = terminate. ShockEvent gains optional `kind` ('oneTime' | 'missedPaycheck'), `date`, `incomeNodeId` — backward compatible.
 - **Consequences:** Measured: 5,000 runs × 90 days in ~0.5s on this VM (target was < 3s) — no hot-loop optimization needed; the skipHash/skipValidation fast path does the work. UI runs 500–10,000 (default 2,000) with progress + cancel; seed displayed; "re-run with same seed" reproduces bit-identical results (unit-tested).
 
+## 2026-11-03 — Tradeoff table: sequential worker runs, reduced MC per candidate
+- **Status:** decided
+- **Context:** Optimizer × Monte Carlo is K runs × M candidates — full 2,000-run MC per candidate would take ~5× longer and block the UI.
+- **Decision:** Default 1,000 runs per candidate (control: 500–5,000), run sequentially through the existing worker protocol with per-candidate progress ("Candidate 2 of 5…") and cancel. Rows: goal score (units depend on the goal, labeled), overdraft chance (1 − P(above $0)), min-balance p5 (worst 5% of runs' lowest point), rent-miss chance (worst month). Sortable; expandable rows show the candidate's engine-generated explanation + mini fan chart. Results keyed by a fingerprint of (optimizer result, runs, seed, graph+assumptions) so staleness is visible.
+- **Consequences:** A 5-candidate stress test at 1,000 runs ≈ 2–3s in the worker. No canvas preview overlay on row select (DESIGN.md §5) — deferred; the expandable fan chart covers the comparison need for v1.
+
 ## Template for future decisions
 
 ```

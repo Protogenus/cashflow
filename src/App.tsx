@@ -13,8 +13,9 @@ import { ForecastView } from './panels/ForecastView';
 import { ScenariosPanel } from './panels/ScenariosPanel';
 import { OptimizerView } from './panels/OptimizerView';
 import { MonteCarloView } from './panels/MonteCarloView';
+import { TradeoffView } from './panels/TradeoffView';
 
-type RightTab = 'forecast' | 'scenarios' | 'optimizer' | 'montecarlo' | 'inspector';
+type RightTab = 'forecast' | 'scenarios' | 'optimizer' | 'montecarlo' | 'tradeoff' | 'inspector';
 
 function RightPanel() {
   const [tab, setTab] = useState<RightTab>('forecast');
@@ -47,6 +48,7 @@ function RightPanel() {
         {tabBtn('scenarios', 'Scenarios')}
         {tabBtn('optimizer', 'Optimizer')}
         {tabBtn('montecarlo', 'Monte Carlo')}
+        {tabBtn('tradeoff', 'Tradeoff')}
         {tabBtn('inspector', 'Inspector')}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="tabpanel">
@@ -54,6 +56,7 @@ function RightPanel() {
         {tab === 'scenarios' && <ScenariosPanel />}
         {tab === 'optimizer' && <OptimizerView />}
         {tab === 'montecarlo' && <MonteCarloView />}
+        {tab === 'tradeoff' && <TradeoffView />}
         {tab === 'inspector' && <Inspector />}
       </div>
     </div>
