@@ -7,3 +7,5 @@ release/
 release-staging/*
 !release-staging/START_CASHFLOW.bat
 cashflow-*.zip
+.artifacts-tmp/
+.gh-tmp/
