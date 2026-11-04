@@ -34,10 +34,24 @@ interface ResultsStore {
   monteCarlo: MonteCarloResult | null;
   monteCarloFingerprint: string | null;
   setMonteCarlo: (r: MonteCarloResult, fingerprint: string) => void;
+  /**
+   * Live MC progress + running flag, mirrored here (not just view-local
+   * state) so a run survives tab switches: the pool callbacks outlive the
+   * view, and a remounted view reads the same store.
+   */
+  mcProgress: { done: number; total: number } | null;
+  setMcProgress: (p: { done: number; total: number } | null) => void;
+  mcRunning: boolean;
+  setMcRunning: (b: boolean) => void;
 
   tradeoff: TradeoffRow[] | null;
   tradeoffFingerprint: string | null;
   setTradeoff: (rows: TradeoffRow[], fingerprint: string) => void;
+  /** Per-candidate tradeoff progress (same remount reasoning as mcProgress). */
+  tradeoffProgress: { candidate: number; total: number; done: number; totalRuns: number } | null;
+  setTradeoffProgress: (p: ResultsStore['tradeoffProgress']) => void;
+  tradeoffRunning: boolean;
+  setTradeoffRunning: (b: boolean) => void;
 
   clearAll: () => void;
 }
@@ -52,9 +66,19 @@ export const useResultsStore = create<ResultsStore>()((set) => ({
   monteCarloFingerprint: null,
   setMonteCarlo: (monteCarlo, monteCarloFingerprint) => set({ monteCarlo, monteCarloFingerprint }),
 
+  mcProgress: null,
+  setMcProgress: (mcProgress) => set({ mcProgress }),
+  mcRunning: false,
+  setMcRunning: (mcRunning) => set({ mcRunning }),
+
   tradeoff: null,
   tradeoffFingerprint: null,
   setTradeoff: (tradeoff, tradeoffFingerprint) => set({ tradeoff, tradeoffFingerprint }),
+
+  tradeoffProgress: null,
+  setTradeoffProgress: (tradeoffProgress) => set({ tradeoffProgress }),
+  tradeoffRunning: false,
+  setTradeoffRunning: (tradeoffRunning) => set({ tradeoffRunning }),
 
   clearAll: () =>
     set({
@@ -62,7 +86,11 @@ export const useResultsStore = create<ResultsStore>()((set) => ({
       optimizerFingerprint: null,
       monteCarlo: null,
       monteCarloFingerprint: null,
+      mcProgress: null,
+      mcRunning: false,
       tradeoff: null,
       tradeoffFingerprint: null,
+      tradeoffProgress: null,
+      tradeoffRunning: false,
     }),
 }));

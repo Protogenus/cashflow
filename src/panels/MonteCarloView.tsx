@@ -333,12 +333,14 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
   const setMonteCarlo = useResultsStore((s) => s.setMonteCarlo);
   const stored = useResultsStore((s) => s.monteCarlo);
   const storedFingerprint = useResultsStore((s) => s.monteCarloFingerprint);
-  const { run, cancel } = useSimWorker();
+  const progress = useResultsStore((s) => s.mcProgress);
+  const setMcProgress = useResultsStore((s) => s.setMcProgress);
+  const running = useResultsStore((s) => s.mcRunning);
+  const setMcRunning = useResultsStore((s) => s.setMcRunning);
+  const { run, cancel } = useSimWorker('montecarlo');
 
   const [runs, setRuns] = useState(2000);
   const [seed, setSeed] = useState(() => assumptions.mcSeed);
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showFailed, setShowFailed] = useState(false);
 
@@ -354,8 +356,8 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
   const start = (useSeed: number) => {
     setError(null);
     setShowFailed(false);
-    setRunning(true);
-    setProgress({ done: 0, total: runs });
+    setMcRunning(true);
+    setMcProgress({ done: 0, total: runs });
     run(
       {
         id: `mc_${crypto.randomUUID()}`,
@@ -369,15 +371,15 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
         },
       },
       {
-        onProgress: (done, total) => setProgress({ done, total }),
+        onProgress: (done, total) => setMcProgress({ done, total }),
         onDone: (res) => {
-          setRunning(false);
-          setProgress(null);
+          setMcRunning(false);
+          setMcProgress(null);
           setMonteCarlo(res, fingerprint);
         },
         onError: (message) => {
-          setRunning(false);
-          setProgress(null);
+          setMcRunning(false);
+          setMcProgress(null);
           setError(message);
         },
       },
@@ -386,8 +388,8 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
 
   const onCancel = () => {
     cancel();
-    setRunning(false);
-    setProgress(null);
+    setMcRunning(false);
+    setMcProgress(null);
   };
 
   const in100 = result ? Math.round(result.probAboveZero * 100) : 0;

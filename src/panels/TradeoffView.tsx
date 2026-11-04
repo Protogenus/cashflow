@@ -6,7 +6,7 @@
  * progress ("Candidate 2 of 5…") and cancel. Sortable columns; expandable
  * rows show the candidate's explanation and its fan chart.
  */
-import { Fragment, useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import {
   Area,
   ComposedChart,
@@ -31,6 +31,13 @@ import { useSimWorker } from '../workers/useSimWorker';
 import { formatDateLong, formatDateShort, formatMoneyWhole } from '../lib/format';
 
 type SortKey = 'goalScore' | 'overdraft' | 'minP5' | 'rentMiss';
+
+/**
+ * Run token, module-level: the per-candidate chain must survive a tab
+ * switch (which remounts this view). A ref would reset to 0 on remount and
+ * the background chain would halt at the next candidate.
+ */
+let tradeoffRunToken = 0;
 
 function MiniFan({ mc }: { mc: MonteCarloResult }) {
   const data = useMemo(
@@ -107,17 +114,18 @@ export function TradeoffView() {
   const tradeoff = useResultsStore((s) => s.tradeoff);
   const tradeoffFingerprint = useResultsStore((s) => s.tradeoffFingerprint);
   const setTradeoff = useResultsStore((s) => s.setTradeoff);
-  const { run, cancel } = useSimWorker();
+  const progress = useResultsStore((s) => s.tradeoffProgress);
+  const setTradeoffProgress = useResultsStore((s) => s.setTradeoffProgress);
+  const running = useResultsStore((s) => s.tradeoffRunning);
+  const setTradeoffRunning = useResultsStore((s) => s.setTradeoffRunning);
+  const { run, cancel } = useSimWorker('tradeoff');
 
   const [mcRuns, setMcRuns] = useState(1000);
   const [seed, setSeed] = useState(() => assumptions.mcSeed);
-  const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<{ candidate: number; total: number; done: number; totalRuns: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('overdraft');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [expanded, setExpanded] = useState<number | null>(0);
-  const runIdRef = useRef(0);
 
   const graph = useMemo(() => ({ nodes, edges }), [nodes, edges]);
   const splitNodes = useMemo(() => {
@@ -180,29 +188,29 @@ export function TradeoffView() {
   const runAll = () => {
     if (!optimizer) return;
     setError(null);
-    setRunning(true);
+    setTradeoffRunning(true);
     setExpanded(0);
-    const runId = ++runIdRef.current;
+    const runId = ++tradeoffRunToken;
     const cands = optimizer.candidates;
     const collected: TradeoffRow[] = [];
     const disabledNodeIds = [...activeScenario.disabledNodeIds];
     let i = 0;
 
     const finish = () => {
-      if (runId !== runIdRef.current) return; // cancelled
-      setRunning(false);
-      setProgress(null);
+      if (runId !== tradeoffRunToken) return; // cancelled
+      setTradeoffRunning(false);
+      setTradeoffProgress(null);
       setTradeoff(collected, currentFingerprint);
     };
 
     const next = () => {
-      if (runId !== runIdRef.current) return;
+      if (runId !== tradeoffRunToken) return;
       if (i >= cands.length) {
         finish();
         return;
       }
       const c = cands[i];
-      setProgress({ candidate: i + 1, total: cands.length, done: 0, totalRuns: mcRuns });
+      setTradeoffProgress({ candidate: i + 1, total: cands.length, done: 0, totalRuns: mcRuns });
       const g = applySplits(graph, c.splits);
       run(
         {
@@ -214,20 +222,20 @@ export function TradeoffView() {
         },
         {
           onProgress: (done, total) => {
-            if (runId === runIdRef.current) {
-              setProgress({ candidate: i + 1, total: cands.length, done, totalRuns: total });
+            if (runId === tradeoffRunToken) {
+              setTradeoffProgress({ candidate: i + 1, total: cands.length, done, totalRuns: total });
             }
           },
           onDone: (res) => {
-            if (runId !== runIdRef.current) return;
+            if (runId !== tradeoffRunToken) return;
             collected.push(buildRow(c, res, i));
             i++;
             next();
           },
           onError: (message) => {
-            if (runId !== runIdRef.current) return;
-            setRunning(false);
-            setProgress(null);
+            if (runId !== tradeoffRunToken) return;
+            setTradeoffRunning(false);
+            setTradeoffProgress(null);
             setError(message);
           },
         },
@@ -237,10 +245,10 @@ export function TradeoffView() {
   };
 
   const onCancel = () => {
-    runIdRef.current++; // invalidate the in-flight chain
+    tradeoffRunToken++; // invalidate the in-flight chain
     cancel();
-    setRunning(false);
-    setProgress(null);
+    setTradeoffRunning(false);
+    setTradeoffProgress(null);
   };
 
   const headers: { key: SortKey; label: string; hint: string }[] = [
