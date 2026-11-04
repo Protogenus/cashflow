@@ -8,7 +8,7 @@ import { clickTab, loadRenterTemplate, skipOnboarding } from './helpers';
 test('run Monte Carlo with 500 runs and see fan chart + probabilities', async ({ page }) => {
   await skipOnboarding(page);
   await loadRenterTemplate(page);
-  await clickTab(page, 'MC');
+  await clickTab(page, 'Monte Carlo');
 
   const panel = page.locator('[role="tabpanel"]');
   // Set 500 runs via the slider (native setter so React sees the change).

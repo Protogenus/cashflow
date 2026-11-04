@@ -11,6 +11,7 @@ import { useScenarioStore } from './store/scenarioStore';
 import { useAssumptionsStore } from './store/assumptionsStore';
 import { useAlertsStore } from './store/alertsStore';
 import { FlowCanvas } from './canvas/FlowCanvas';
+import { TimelapseBar } from './canvas/TimelapseBar';
 import { Palette } from './canvas/Palette';
 import { Inspector } from './canvas/Inspector';
 import { ForecastView } from './panels/ForecastView';
@@ -432,8 +433,9 @@ export function App() {
                 mobilePlanView === 'list' ? (
                   <NodeListView />
                 ) : (
-                  <main className="h-full" aria-label="Canvas">
+                  <main className="h-full relative" aria-label="Canvas">
                     <FlowCanvas />
+                    <TimelapseBar />
                   </main>
                 )
               ) : (
@@ -448,8 +450,9 @@ export function App() {
           <div className="border-r" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
             <Palette />
           </div>
-          <main className="min-w-0 flex-1" aria-label="Canvas">
+          <main className="min-w-0 flex-1 relative" aria-label="Canvas">
             <FlowCanvas />
+            <TimelapseBar />
           </main>
           <aside
             id="cf-results"

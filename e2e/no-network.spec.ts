@@ -26,7 +26,7 @@ test('no network calls with user data during a full session', async ({ page }) =
   // Exercise the worker path too (same-origin worker script is fine).
   await page.evaluate(() => {
     const tabs = [...document.querySelectorAll('[role="tab"]')];
-    tabs.find((el) => el.textContent?.trim() === 'MC')?.click();
+    tabs.find((el) => el.textContent?.trim() === 'Monte Carlo')?.click();
   });
   await page.getByRole('button', { name: 'Run simulation' }).click();
   await expect(

@@ -175,3 +175,27 @@ Format for each entry:
 - **Context:** The React Flow MiniMap rendered its frame and viewport mask but zero node dots — the RF store never populated measured dimensions for our custom node types (verified: `.react-flow__minimap-node` count stayed 0 even after 5s; `nodeHasDimensions` gate filters every node). An empty minimap frame reads as a broken control.
 - **Decision:** Remove the MiniMap; keep zoom Controls + fitView. Revisit if a future @xyflow/react version measures custom nodes correctly — the removal is one line to revert.
 - **Consequences:** Slightly less at-a-glance navigation on large graphs; the canvas remains fully pannable/zoomable.
+
+## 2026-11-04 — Right rail: 24rem + 3×3 tab grid; Settings rows stack vertically
+- **Status:** decided
+- **Context:** Blake: the right rail was cramped (w-80) with tiny tab buttons half-hidden behind a horizontal scrollbar; Settings rows had label/control columns colliding at narrow widths.
+- **Decision:** Rail widened to 24rem; the 9 tab buttons became a 3×3 grid (no horizontal scroll) at 13px with an active-background tint; "MC"→"Monte Carlo", "Tradeoff"→"Trade-off". Settings `Row` restyled as a vertical stack (title+blurb above, control below, wrapping) so it reads cleanly at any width.
+- **Consequences:** Less canvas width on small laptop screens; mobile already uses full-width sections.
+
+## 2026-11-04 — Split nodes use the rectangular card (diamond removed)
+- **Status:** decided
+- **Context:** Blake: "I dont like the Split node is diagonal, make it like the other nodes."
+- **Decision:** Deleted `DiamondShell`; both split nodes now use `RectShell` with a `cf-node-split` accent (logic-color left border, like income/expense) and multiple output handles along the right edge. Dead diamond CSS removed.
+- **Consequences:** Splits are visually consistent with every other node; still distinguishable by color + icon. Conditional keeps its hexagon (not flagged).
+
+## 2026-11-04 — Marquee multi-select on the canvas
+- **Status:** decided
+- **Context:** Blake: "Make it so I can drag a marquee over nodes to select them all and move them."
+- **Decision:** `selectionOnDrag` + `panOnDrag={[1,2]}` (middle/right-drag still pans). Store gained `selectedNodeIds` alongside `selectedNodeId` (single-selection convenience: set iff exactly one selected, so the Inspector auto-open behavior is unchanged). Selection changes accumulate via `onNodesChange` 'select' events — required because nodes are controlled (`selected` comes from the store); `onSelectionChange` alone never fired with the real set. Dragging any selected node moves the group; beginDrag/endDrag already snapshot once, so multi-move is a single undo step. Delete removes the whole selection in one history entry. Inspector empty state shows "N nodes selected" guidance.
+- **Consequences:** Left-drag no longer pans the canvas (standard tradeoff for marquee apps); keyboard Delete now deletes groups.
+
+## 2026-11-04 — Timelapse: play/stop money-flow playback on the canvas
+- **Status:** decided
+- **Context:** Blake: "We need a play and stop button for the node graph that shows a timelapse of a selected time and how money gets dispersed, good to troubleshoot splits."
+- **Decision:** New pure engine module `engine/flow.ts`: `flowFrames()` replays the deterministic forecast walk and emits per-day frames (edge transfers with amounts + node pulses + one-line summary), derived from the same `forecast()` + `buildAllocationPlan()` the chart uses — the timelapse can only show what the forecast computes. `flowStore` holds playback state (frames snapshot on Play; 14/30/60/90-day window; 1×/2×/4× speed; scrub slider). `TimelapseBar` docks at the canvas bottom (collapsed ▶ button when idle). Active edges glow with animated dashes; firing nodes get pulsing amount chips; the bar shows date, balance, and the day's money movement in words. Scrubbing pauses. Honest footnote: only percentage-split routing is simulated — priority/conditional nodes don't move money in the forecast yet (pre-existing engine scope, not changed here).
+- **Consequences:** Frames are a snapshot — edits mid-playback don't rebuild until Play is pressed again. 6 new engine tests; 187 unit tests green.

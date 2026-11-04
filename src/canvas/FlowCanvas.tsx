@@ -18,6 +18,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { useGraphStore } from '../store/graphStore';
 import { useScenarioStore } from '../store/scenarioStore';
+import { useFlowStore } from '../store/flowStore';
 import { findOrphanedNodes } from '../engine';
 import { cardStatus } from './cardStatus';
 import { nodeTypes, type CFNodeData } from './nodes';
@@ -40,6 +41,20 @@ export function FlowCanvas() {
   const edges = useGraphStore((s) => s.edges);
   const selectedNodeIds = useGraphStore((s) => s.selectedNodeIds);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const flowActive = useFlowStore((s) => s.active);
+  const flowFrames = useFlowStore((s) => s.frames);
+  const flowFrameIndex = useFlowStore((s) => s.frameIndex);
+  const flowFrame = flowActive
+    ? flowFrames[Math.min(flowFrameIndex, flowFrames.length - 1)] ?? null
+    : null;
+  const flowEdgeIds = useMemo(
+    () => new Set((flowFrame?.transfers ?? []).flatMap((t) => t.edgeIds)),
+    [flowFrame],
+  );
+  const flowPulses = useMemo(
+    () => new Map((flowFrame?.pulses ?? []).map((p) => [p.nodeId, p])),
+    [flowFrame],
+  );
   const { screenToFlowPosition } = useReactFlow();
 
   const graph = useMemo(() => ({ nodes, edges }), [nodes, edges]);
@@ -67,27 +82,29 @@ export function FlowCanvas() {
             (status.secondary ? `, ${status.secondary}` : '') +
             (disabled ? ', excluded from this scenario' : '') +
             (orphanIds.has(n.id) ? ', not connected' : ''),
-          data: { node: n, status, orphaned: orphanIds.has(n.id), disabled },
+          data: { node: n, status, orphaned: orphanIds.has(n.id), disabled, flowPulse: flowPulses.get(n.id) ?? null },
         };
       }),
-    [nodes, selectedNodeIds, orphanIds, disabledIds, graph],
+    [nodes, selectedNodeIds, orphanIds, disabledIds, graph, flowPulses],
   );
 
   const rfEdges: Edge[] = useMemo(
     () =>
       edges.map((e) => {
         const src = nodes.find((n) => n.id === e.source);
+        const flowing = flowEdgeIds.has(e.id);
         return {
           id: e.id,
           source: e.source,
           target: e.target,
           sourceHandle: e.sourceHandle,
           targetHandle: e.targetHandle,
-          className: edgeClass(src),
+          className: `${edgeClass(src)}${flowing ? ' cf-edge-flow' : ''}`,
+          animated: flowing,
           selected: e.id === selectedEdgeId,
         };
       }),
-    [edges, nodes, selectedEdgeId],
+    [edges, nodes, selectedEdgeId, flowEdgeIds],
   );
 
   const onNodesChange = useCallback(

@@ -337,7 +337,7 @@ export function splitShares(amountCents: Cents, percents: number[]): Cents[] {
 }
 
 /** Divide integer cents equally; the first share absorbs rounding. */
-function divideEqually(amountCents: Cents, parts: number): Cents[] {
+export function divideEqually(amountCents: Cents, parts: number): Cents[] {
   if (parts <= 0) return [];
   const each = Math.round(amountCents / parts);
   const out = new Array(parts).fill(each) as Cents[];
