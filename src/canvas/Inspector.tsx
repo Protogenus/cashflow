@@ -446,9 +446,14 @@ function PrioritySplitEditor({ node }: { node: Extract<PlanNode, { type: 'priori
 }
 
 // ---------- main panel ----------
-export function Inspector() {
-  const selectedNodeId: NodeId | null = useGraphStore((s) => s.selectedNodeId);
-  const node = useGraphStore((s) => s.nodes.find((n) => n.id === selectedNodeId));
+
+/**
+ * NodeEditor edits one node by id — the exact same form the Inspector tab
+ * shows. NodeListView reuses it for inline editing on small screens, so both
+ * surfaces stay identical by construction.
+ */
+export function NodeEditor({ nodeId }: { nodeId: NodeId | null }) {
+  const node = useGraphStore((s) => s.nodes.find((n) => n.id === nodeId));
   const updateNode = useGraphStore((s) => s.updateNode);
   const deleteNode = useGraphStore((s) => s.deleteNode);
   const { changed, blur } = useEditGroup();
@@ -584,4 +589,10 @@ export function Inspector() {
       )}
     </div>
   );
+}
+
+/** Inspector tab: the editor for whatever node is currently selected. */
+export function Inspector() {
+  const selectedNodeId: NodeId | null = useGraphStore((s) => s.selectedNodeId);
+  return <NodeEditor nodeId={selectedNodeId} />;
 }

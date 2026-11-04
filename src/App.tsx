@@ -24,6 +24,8 @@ import { SettingsPanel } from './panels/SettingsPanel';
 import { Onboarding } from './components/Onboarding';
 import { TemplatePicker } from './components/TemplatePicker';
 import { useSettingsStore } from './store/settingsStore';
+import { useIsMobile } from './lib/useIsMobile';
+import { NodeListView } from './canvas/NodeListView';
 import {
   applyPersistedState,
   browserStorage,
@@ -46,7 +48,7 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
   const tabBtn = (id: RightTab, label: string) => (
     <button
       key={id}
-      className="flex-1 px-1 py-2 text-[11px] font-semibold"
+      className="shrink-0 whitespace-nowrap px-2 py-2 text-[11px] font-semibold md:flex-1 md:px-1"
       style={{
         color: tab === id ? 'var(--text)' : 'var(--text-muted)',
         borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
@@ -62,7 +64,7 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex border-b" style={{ borderColor: 'var(--border)' }} role="tablist">
+      <div className="flex overflow-x-auto border-b" style={{ borderColor: 'var(--border)' }} role="tablist" aria-label="Results panels">
         {tabBtn('forecast', 'Forecast')}
         {tabBtn('alerts', 'Alerts')}
         {tabBtn('scenarios', 'Scenarios')}
@@ -158,6 +160,10 @@ export function App() {
   const [tab, setTab] = useState<RightTab>('forecast');
   const [corruptNotice, setCorruptNotice] = useState<string | null>(null);
   const hydratedRef = useRef(false);
+  const isMobile = useIsMobile();
+  const mobilePlanView = useSettingsStore((s) => s.mobilePlanView);
+  const setSettings = useSettingsStore((s) => s.set);
+  const [mobileSection, setMobileSection] = useState<'plan' | 'results'>('plan');
 
   // Theme: light / dark / system (follows the OS setting).
   useEffect(() => {
@@ -242,11 +248,40 @@ export function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Esc: close dialogs first, then clear the node selection.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (showTemplates) {
+        setShowTemplates(false);
+        return;
+      }
+      const st = useGraphStore.getState();
+      if (st.selectedNodeId) st.setSelected(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showTemplates]);
+
+  const sectionBtn = (id: 'plan' | 'results', label: string) => (
+    <button
+      key={id}
+      className={`cf-btn px-4 py-1.5 text-[13px] ${mobileSection === id ? 'cf-btn-primary' : ''}`}
+      onClick={() => setMobileSection(id)}
+      aria-pressed={mobileSection === id}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <ReactFlowProvider>
       <div className="flex h-full flex-col">
+        <a href="#cf-results" className="cf-skip-link">
+          Skip to results
+        </a>
         <header
-          className="flex items-center gap-3 border-b px-4 py-2"
+          className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-2"
           style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
         >
           <div>
@@ -293,6 +328,51 @@ export function App() {
           </div>
         )}
 
+        {isMobile ? (
+          /* Small screens (DESIGN.md §8): Plan / Results sections stacked;
+             the plan is a node list by default with a manual canvas toggle. */
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div
+              className="flex flex-wrap items-center gap-2 border-b px-3 py-2"
+              style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
+            >
+              <div className="flex gap-1" role="group" aria-label="App sections">
+                {sectionBtn('plan', 'Plan')}
+                {sectionBtn('results', 'Results')}
+              </div>
+              {mobileSection === 'plan' && (
+                <div className="ml-auto flex gap-1" role="group" aria-label="Plan view: list or canvas">
+                  {(['list', 'canvas'] as const).map((v) => (
+                    <button
+                      key={v}
+                      className={`cf-btn px-3 py-1.5 text-xs ${mobilePlanView === v ? 'cf-btn-primary' : ''}`}
+                      onClick={() => setSettings({ mobilePlanView: v })}
+                      aria-pressed={mobilePlanView === v}
+                      title={v === 'list' ? 'Node list (easier on small screens)' : 'Graph canvas'}
+                    >
+                      {v === 'list' ? '☰ List' : '⤢ Canvas'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="min-h-0 flex-1">
+              {mobileSection === 'plan' ? (
+                mobilePlanView === 'list' ? (
+                  <NodeListView />
+                ) : (
+                  <main className="h-full" aria-label="Canvas">
+                    <FlowCanvas />
+                  </main>
+                )
+              ) : (
+                <div id="cf-results" tabIndex={-1} className="h-full">
+                  <RightPanel tab={tab} setTab={setTab} />
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
         <div className="flex min-h-0 flex-1">
           <div className="border-r" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
             <Palette />
@@ -301,6 +381,8 @@ export function App() {
             <FlowCanvas />
           </main>
           <aside
+            id="cf-results"
+            tabIndex={-1}
             className="w-80 shrink-0 border-l"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
             aria-label="Inspector and forecast"
@@ -308,6 +390,7 @@ export function App() {
             <RightPanel tab={tab} setTab={setTab} />
           </aside>
         </div>
+        )}
         <Toast />
         {!onboardingComplete && <Onboarding />}
         {showTemplates && <TemplatePicker onClose={() => setShowTemplates(false)} />}

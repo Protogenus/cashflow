@@ -37,6 +37,12 @@ export interface SettingsState {
   /** Prefix used by money formatting. Never an exchange rate — display only. */
   currencySymbol: string;
   reducedMotion: ReducedMotionChoice;
+  /**
+   * Small-screen (<768px) plan surface: 'list' renders the node list,
+   * 'canvas' the React Flow canvas. Manual toggle only, never automatic
+   * mid-session (DESIGN.md §8); persisted per device via localStorage.
+   */
+  mobilePlanView: 'list' | 'canvas';
 }
 
 export const DEFAULT_SETTINGS: SettingsState = {
@@ -48,6 +54,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   currencyCode: 'USD',
   currencySymbol: '$',
   reducedMotion: 'system',
+  mobilePlanView: 'list',
 };
 
 interface SettingsStore extends SettingsState {

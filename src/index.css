@@ -267,3 +267,60 @@ body {
   animation: none !important;
   transition: none !important;
 }
+
+/* ---------- accessibility ---------- */
+
+/* Visually hidden but available to screen readers (chart text alternatives). */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip link: off-screen until focused (DESIGN.md §9). */
+.cf-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  background: var(--surface);
+  color: var(--text);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.cf-skip-link:focus {
+  left: 8px;
+  top: 8px;
+  outline: none;
+}
+
+/* Never allow page-level horizontal scroll (mobile guard). */
+html, body {
+  overflow-x: clip;
+}
+
+/* Visible keyboard focus for anything the global outline would miss. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- small screens ---------- */
+@media (max-width: 767px) {
+  /* ≥44px touch targets on the compact list-view controls. */
+  .cf-palette-item,
+  .cf-btn {
+    min-height: 40px;
+  }
+  .cf-field input, .cf-field select {
+    min-height: 40px;
+  }
+}

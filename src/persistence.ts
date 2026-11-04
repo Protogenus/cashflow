@@ -279,6 +279,7 @@ export function collectPersistedState(): PersistedState {
       currencyCode: settings.currencyCode,
       currencySymbol: settings.currencySymbol,
       reducedMotion: settings.reducedMotion,
+      mobilePlanView: settings.mobilePlanView,
     },
     savedAt: new Date().toISOString(),
   };
