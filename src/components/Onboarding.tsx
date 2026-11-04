@@ -58,7 +58,7 @@ export function Onboarding() {
   const skip = () => completeOnboarding();
 
   const finish = () => {
-    const balanceCents = parseDollarsToCents(balance) ?? 0;
+    const balanceCents = parseDollarsToCents(balance, { allowNegative: true }) ?? 0;
     const payCents = parseDollarsToCents(payAmount);
     const billCents = parseDollarsToCents(billAmount);
     if (payCents == null || payCents <= 0) {
@@ -88,7 +88,7 @@ export function Onboarding() {
   const next = () => {
     setError(null);
     if (step === 0) {
-      if (parseDollarsToCents(balance) == null) {
+      if (parseDollarsToCents(balance, { allowNegative: true }) == null) {
         setError('Enter a balance, like 1850. Use 0 if you are not sure.');
         return;
       }

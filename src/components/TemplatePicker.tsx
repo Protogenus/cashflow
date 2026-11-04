@@ -82,7 +82,7 @@ export function TemplatePicker({
                 ) : (
                   <button
                     className="cf-btn shrink-0 px-3 py-1 text-xs"
-                    onClick={() => setConfirmId(t.id)}
+                    onClick={() => (nodeCount > 0 ? setConfirmId(t.id) : apply(t))}
                   >
                     Use template
                   </button>

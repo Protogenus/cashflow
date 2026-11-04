@@ -167,8 +167,37 @@ export function validateGraph(graph: PlanGraph): GraphValidation {
   }
 
   for (const node of graph.nodes) {
+    // Date fields must be real calendar dates. The UI's date inputs always
+    // produce valid YYYY-MM-DD, but imported JSON can carry anything — a bad
+    // date must be a clear validation error, never a silent wrong forecast.
+    const checkDate = (value: string, field: string) => {
+      try {
+        parseISODate(value as ISODate);
+      } catch {
+        errors.push({
+          nodeId: node.id,
+          message: `"${node.label}" has an invalid ${field} ("${value}"). Pick a real calendar date.`,
+        });
+      }
+    };
     switch (node.type) {
+      case 'startingBalance':
+        checkDate(node.asOf, 'as-of date');
+        break;
+      case 'income':
+      case 'expense': {
+        const f = node.recurrence.frequency;
+        if (f.kind === 'weekly' || f.kind === 'biweekly') checkDate(f.anchor, 'anchor date');
+        else if (f.kind === 'once') checkDate(f.date, 'date');
+        break;
+      }
+      case 'goal':
+        checkDate(node.targetDate, 'target date');
+        break;
       case 'variableAmount': {
+        const f = node.recurrence.frequency;
+        if (f.kind === 'weekly' || f.kind === 'biweekly') checkDate(f.anchor, 'anchor date');
+        else if (f.kind === 'once') checkDate(f.date, 'date');
         const { minCents, typicalCents, maxCents } = node;
         if (!(minCents <= typicalCents && typicalCents <= maxCents)) {
           errors.push({

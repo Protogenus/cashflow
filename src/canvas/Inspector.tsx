@@ -79,7 +79,14 @@ function TextInput({ value, onChange, onBlur, ...rest }: TextInputProps) {
 }
 
 /** Money input in dollars; commits integer cents only for valid input. */
-function MoneyInput({ cents, onCommit, onBlur, ariaLabel }: { cents: number; onCommit: (cents: number) => void; onBlur: () => void; ariaLabel?: string }) {
+function MoneyInput({ cents, onCommit, onBlur, ariaLabel, allowNegative }: {
+  cents: number;
+  onCommit: (cents: number) => void;
+  onBlur: () => void;
+  ariaLabel?: string;
+  /** Starting balance can be negative (an overdrawn account is real). */
+  allowNegative?: boolean;
+}) {
   const { changed } = useEditGroup();
   const [text, setText] = useState(() => formatDollars(cents));
   const [focused, setFocused] = useState(false);
@@ -101,7 +108,7 @@ function MoneyInput({ cents, onCommit, onBlur, ariaLabel }: { cents: number; onC
           onFocus={() => setFocused(true)}
           onChange={(e) => {
             setText(e.target.value);
-            const parsed = parseDollarsToCents(e.target.value);
+            const parsed = parseDollarsToCents(e.target.value, { allowNegative });
             if (parsed !== null) {
               setInvalid(false);
               changed();
@@ -112,7 +119,7 @@ function MoneyInput({ cents, onCommit, onBlur, ariaLabel }: { cents: number; onC
           }}
           onBlur={() => {
             setFocused(false);
-            const parsed = parseDollarsToCents(text);
+            const parsed = parseDollarsToCents(text, { allowNegative });
             if (parsed !== null) {
               setInvalid(false);
               onCommit(parsed);
@@ -125,15 +132,21 @@ function MoneyInput({ cents, onCommit, onBlur, ariaLabel }: { cents: number; onC
           aria-label={ariaLabel ?? 'Amount in dollars'}
         />
       </div>
-      {invalid && <div className="cf-error">Enter an amount, like 1400.00</div>}
+      {invalid && <div className="cf-error">Enter an amount, like 1400.00{allowNegative ? ' (a negative balance is fine)' : ''}</div>}
     </>
   );
 }
 
-function LabeledMoney({ label, cents, onCommit, onBlur }: { label: string; cents: number; onCommit: (c: number) => void; onBlur: () => void }) {
+function LabeledMoney({ label, cents, onCommit, onBlur, allowNegative }: {
+  label: string;
+  cents: number;
+  onCommit: (c: number) => void;
+  onBlur: () => void;
+  allowNegative?: boolean;
+}) {
   return (
     <Field label={label}>
-      <MoneyInput cents={cents} onCommit={onCommit} onBlur={onBlur} ariaLabel={label} />
+      <MoneyInput cents={cents} onCommit={onCommit} onBlur={onBlur} ariaLabel={label} allowNegative={allowNegative} />
     </Field>
   );
 }
@@ -501,7 +514,7 @@ export function NodeEditor({ nodeId }: { nodeId: NodeId | null }) {
 
       {node.type === 'startingBalance' && (
         <>
-          <LabeledMoney label="Balance" cents={node.balanceCents}
+          <LabeledMoney label="Balance" cents={node.balanceCents} allowNegative
             onCommit={(c) => { changed(); updateNode(node.id, (n) => (n.type === 'startingBalance' ? { ...n, balanceCents: c } : n)); }} onBlur={blur} />
           <Field label="As of">
             <input type="date" value={node.asOf}

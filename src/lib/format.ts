@@ -51,13 +51,14 @@ export function formatDollars(cents: number): string {
 }
 
 /**
- * Parse a dollars input ("1400", "1,400.50", "$1,400") into integer cents.
- * Returns null when the input is not a valid non-negative amount.
+ * Parse a dollars input ("1400", "1,400.50", "$1,400", "-50" when allowed)
+ * into integer cents. Returns null when the input is not a valid amount.
  */
-export function parseDollarsToCents(input: string): number | null {
+export function parseDollarsToCents(input: string, opts?: { allowNegative?: boolean }): number | null {
   const cleaned = input.replace(/[$,\s]/g, '');
   if (cleaned === '') return null;
-  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return null;
+  const pattern = opts?.allowNegative ? /^-?\d+(\.\d{1,2})?$/ : /^\d+(\.\d{1,2})?$/;
+  if (!pattern.test(cleaned)) return null;
   const cents = Math.round(parseFloat(cleaned) * 100);
   return Number.isSafeInteger(cents) ? cents : null;
 }
