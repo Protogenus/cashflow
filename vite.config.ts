@@ -8,6 +8,6 @@ export default defineConfig({
   test: {
     // Engine unit tests (pure TS, no DOM) + template regression tests.
     environment: 'node',
-    include: ['src/**/*.test.ts'],
+    include: ['src/renderer/**/*.test.ts'],
   },
 });

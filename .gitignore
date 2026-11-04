@@ -2,3 +2,8 @@ node_modules/
 dist/
 *.local
 .DS_Store
+out/
+release/
+release-staging/win-unpacked/
+release-staging/resources/
+cashflow-*.zip
