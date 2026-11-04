@@ -217,3 +217,16 @@ Format for each entry:
 - **Context:** Blake: "The nodes still dont show the cash amount going down when money is transfered out of the node."
 - **Decision:** Every FlowTransfer emits an `outflow` pulse on its source node (`−amount → target name`). Node chips became a per-node stack (`flowPulses: []`, `.cf-flow-chips` column): e.g. Paycheck shows "+$1,850" over "−$1,850 → Paycheck split"; Checking shows the live balance plus "−$1,400 → Rent". All amounts come from the walk; no intra-day staging is invented.
 - **Consequences:** Pulse assertions in flow.test.ts now cover outflow; chip stack maxes at ~3 per node in practice (balance+event+outflow).
+
+## 2026-11-04 — Timelapse badges border node bottoms; bills follow drawn branches; dots hide while dragging
+Blake: badges stacked on top of nodes looked bad; virtual bill routes cut random diagonals instead of following branches; dragging a node mid-timelapse glitched the visuals.
+- `.cf-flow-chips` repositioned: bottom:-15px, centered, horizontal row — chips straddle the node's bottom edge.
+- flow.ts expense branch: if a bill has incoming drawn edges, the payment travels those edges (fromId = first edge's source, so the outflow chip lands on the split) instead of a virtual diagonal. Only falls back to the balance→bill virtual route when the bill is unwired. Unit-tested (7/7 flow tests).
+- Drag glitch root cause: SMIL animateMotion restarts on every mousemove while the path updates. Fix: FlowMoneyEdge dots and FlowVirtualOverlay hide while any node is dragging (RF `useStore(s => s.nodes.some(n => n.dragging))`).
+
+## 2026-11-04 — Selection fixed: authoritative capture-phase click selection
+Blake: "Selecting nodes is strange, sometimes it wont select a node, sometimes it selects a second node like you are holding shift."
+- Root causes found by reproduction + RF source reading: (1) with fully-controlled selection state, RF v12's internal replace-selection drops the deselect-others change, so plain clicks accumulate like shift-clicks; clicking an already-selected node is a silent no-op. (2) `.react-flow__nodesselection-rect` has `pointer-events: all` — after a marquee, the rect overlays the grouped nodes and swallows all clicks, so a group could never be collapsed by clicking a node.
+- Fix: capture-phase `onMouseDownCapture`/`onClickCapture` on the ReactFlow wrapper compute selection authoritatively from the store BEFORE RF's handlers run; RF's own select changes for the gestured node are suppressed via a ref (cleared on pointerup + 1.5s timeout fallback). Mousedown on unselected node = select exactly it; on selected node = leave group (group drag works); click = collapse to that node; ctrl/cmd = toggle. Marquee/pane still flow through onNodesChange untouched.
+- Gotcha: the click event's own target is unreliable (node DOM recycled between mousedown/mouseup), so the click handler reads the gesture's node from a mousedown-stored ref. CSS override makes the selection rect click-through (visual only now).
+- Verified in headless Chromium: 8/8 selection scenarios pass (plain replace, ctrl add/toggle, marquee, group collapse, pane clear) + group drag moves both nodes. 188/188 unit tests green.

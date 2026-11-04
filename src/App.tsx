@@ -349,7 +349,7 @@ export function App() {
           style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
         >
           <div>
-            <h1 className="cf-display text-lg leading-tight">Cash-Flow Planner</h1>
+            <h1 className="cf-display text-lg leading-tight">Cashflow</h1>
             <p className="text-[11px] leading-tight" style={{ color: 'var(--text-muted)' }}>
               Based on your inputs — not financial advice.
             </p>
