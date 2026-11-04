@@ -8,7 +8,7 @@
  * Rendered as a child of <ReactFlow>, so it lives inside the transformed
  * viewport and pans/zooms with the canvas.
  */
-import { getBezierPath, Position, useNodes, useViewport } from '@xyflow/react';
+import { getBezierPath, Position, useNodes, useViewport, useStore as useRFStore } from '@xyflow/react';
 import { useFlowStore } from '../store/flowStore';
 
 export function FlowVirtualOverlay() {
@@ -17,8 +17,11 @@ export function FlowVirtualOverlay() {
   const frameIndex = useFlowStore((s) => s.frameIndex);
   const nodes = useNodes();
   const { x, y, zoom } = useViewport();
+  // Dots restart their SMIL animation on every mousemove while dragging —
+  // hide the overlay until the drag ends instead of juddering.
+  const anyDragging = useRFStore((s) => s.nodes.some((n) => n.dragging));
 
-  if (!active || frames.length === 0) return null;
+  if (!active || anyDragging || frames.length === 0) return null;
   const frame = frames[Math.min(frameIndex, frames.length - 1)];
   const virtual = frame.transfers.filter((t) => t.edgeIds.length === 0);
   if (virtual.length === 0) return null;

@@ -109,7 +109,31 @@ describe('flowFrames', () => {
     expect(payday.summary).toMatch(/\$1,480 kept in balance/);
   });
 
+  it('follows drawn branches into a wired bill instead of a virtual route', () => {
+    const frames = flowFrames(
+      graph(
+        [balance('bal', 100000), split('s'), expense('util', 'Electric', 21000, '2026-11-05')],
+        [edge('e9', 's', 'util', 'bills')],
+      ),
+      assumptions(),
+      OPTS,
+    );
+    // The payment travels the user's drawn split → bill edge.
+    expect(frames[2].transfers).toEqual([
+      {
+        fromId: 's',
+        toId: 'util',
+        edgeIds: ['e9'],
+        amountCents: 21000,
+        label: 'Electric',
+      },
+    ]);
+    const out = frames[2].pulses.find((p) => p.kind === 'outflow');
+    expect(out).toEqual({ nodeId: 's', amountCents: -21000, kind: 'outflow', note: '→ Electric' });
+  });
+
   it('pulses expenses with negative amounts', () => {
+
     const frames = flowFrames(
       graph([balance('bal', 100000), expense('rent', 'Rent', 140000, '2026-11-05')]),
       assumptions(),

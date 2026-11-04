@@ -233,7 +233,19 @@ export function flowFrames(
         }
       } else if (ev.kind === 'expense') {
         pulses.push({ nodeId: ev.nodeId, amountCents: ev.amountCents, kind: 'expense' });
-        if (balanceNode) {
+        const incoming = active.edges.filter((e) => e.target === ev.nodeId);
+        if (incoming.length > 0) {
+          // The user drew branches into this bill — follow them instead of
+          // cutting a diagonal across the canvas. The forecast still pays the
+          // bill from the balance; this is the visual route, not new math.
+          transfers.push({
+            fromId: incoming[0].source,
+            toId: ev.nodeId,
+            edgeIds: incoming.map((e) => e.id),
+            amountCents: -ev.amountCents as Cents,
+            label: `${ev.name}`,
+          });
+        } else if (balanceNode) {
           // Bills are paid straight out of the balance — no drawn edge exists,
           // so the timelapse draws a virtual route (edgeIds: []) from the
           // account to the bill. This is what the forecast walk computes.

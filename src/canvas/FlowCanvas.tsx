@@ -11,6 +11,7 @@ import {
   ReactFlow,
   SelectionMode,
   useReactFlow,
+  useStore as useRFStore,
   type Connection,
   type Edge,
   type Node,
@@ -45,6 +46,9 @@ export function FlowCanvas() {
   const edges = useGraphStore((s) => s.edges);
   const selectedNodeIds = useGraphStore((s) => s.selectedNodeIds);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  /** While a node is being dragged, SMIL dot animations restart every mousemove
+   *  (visual judder) — so the traveling dots hide until the drag ends. */
+  const anyDragging = useRFStore((s) => s.nodes.some((n) => n.dragging));
   const flowActive = useFlowStore((s) => s.active);
   const flowFrames = useFlowStore((s) => s.frames);
   const flowFrameIndex = useFlowStore((s) => s.frameIndex);
@@ -111,7 +115,7 @@ export function FlowCanvas() {
     () =>
       edges.map((e) => {
         const src = nodes.find((n) => n.id === e.source);
-        const flowing = flowEdgeIds.has(e.id);
+        const flowing = flowEdgeIds.has(e.id) && !anyDragging;
         return {
           id: e.id,
           type: 'flow',
@@ -127,7 +131,7 @@ export function FlowCanvas() {
           selected: e.id === selectedEdgeId,
         };
       }),
-    [edges, nodes, selectedEdgeId, flowEdgeIds, flowAmounts],
+    [edges, nodes, selectedEdgeId, flowEdgeIds, flowAmounts, anyDragging],
   );
 
   const onNodesChange = useCallback(
