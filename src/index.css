@@ -2,45 +2,83 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ---------- DESIGN.md §2 color tokens ---------- */
+/* ---------- Clever Signal / Vista design tokens (DESIGN_SYSTEM.md v2) ---------- */
 :root {
-  --bg: #fafaf8;
-  --surface: #ffffff;
-  --surface-2: #f1efea;
-  --border: #e2ded4;
-  --text: #1c1a15;
-  --text-muted: #6b665a;
-  --income: #2c7449;
-  --expense: #b3402e;
-  --accent: #2b5f8a;
-  --warning: #96600f;
-  --danger: #b3402e;
-  --node-balance: #2b5f8a;
-  --node-logic: #6d5b8e;
-  --node-goal: #2f7d4f;
-  --node-debt: #8a4a2b;
-  --node-variable: #96600f;
-  --on-accent: #ffffff;
+  --bg: #f5f0e6;            /* warm cream app background */
+  --surface: #fffdf9;       /* ivory card surfaces */
+  --surface-2: #f3ede0;     /* deeper cream: hovers, wells */
+  --border: #eae3d5;        /* soft dividers */
+  --text: #1c1a17;          /* ink */
+  --text-muted: #8a8478;
+  --income: #5e7f4d;        /* deep sage — readable on cream */
+  --expense: #c25e5e;       /* soft rose red */
+  --accent: #d98aa8;        /* Vista pink — highlights, never buttons */
+  --accent-deep: #b96a86;   /* readable pink for text/icons on cream */
+  --warning: #a87b1f;       /* deep amber — readable on cream */
+  --danger: #c25e5e;
+  --danger-soft: #f7e3e3;
+  --sage: #9db189;          /* pastel sage — dots, fills */
+  --sage-soft: #eaf0e4;
+  --amber: #c99a2e;         /* pastel amber */
+  --amber-soft: #f7ecd4;
+  --sky: #8fa9c7;           /* dusty blue pastel */
+  --sky-soft: #e6edf5;
+  --node-balance: #5b7a99;  /* deep dusty blue */
+  --node-logic: #b96a86;    /* deep rose (splits + conditional) */
+  --node-goal: #5e7f4d;     /* deep sage */
+  --node-debt: #a86a3b;     /* warm amber-brown */
+  --node-variable: #a87b1f; /* deep amber */
+  --on-accent: #fffdf9;
+  /* dark sidebar (the left node rail) — dark in both themes */
+  --sidebar: #1b1917;
+  --sidebar-2: #2e2a26;     /* active/hover item */
+  --sidebar-ink: #f5f0e6;
+  --sidebar-muted: #a39e93;
+  /* per-type icon colors tuned for the dark sidebar */
+  --sb-balance: #9db8d4;
+  --sb-income: #a9c795;
+  --sb-expense: #e08a8a;
+  --sb-logic: #e3a4bc;
+  --sb-goal: #a9c795;
+  --sb-debt: #d89a6a;
+  --sb-variable: #d9a441;
+  --radius-card: 18px;
+  --radius-input: 12px;
+  --shadow-card: 0 1px 3px rgb(28 26 23 / 0.07), 0 4px 14px rgb(28 26 23 / 0.05);
+  --font-display: Georgia, 'Times New Roman', 'Nimbus Roman No9 L', serif;
 }
 
 .dark {
-  --bg: #161511;
-  --surface: #1e1d18;
-  --surface-2: #26251f;
-  --border: #3a382e;
-  --text: #ede9dd;
-  --text-muted: #a8a294;
-  --income: #5cb87f;
-  --expense: #e0705a;
-  --accent: #7fa8cc;
+  --bg: #1b1917;            /* warm charcoal */
+  --surface: #2e2a26;
+  --surface-2: #3d3833;
+  --border: #3d3833;
+  --text: #f5f0e6;
+  --text-muted: #a39e93;
+  --income: #8fc07a;
+  --expense: #e08a8a;
+  --accent: #d98aa8;
+  --accent-deep: #e3a4bc;
   --warning: #d9a441;
-  --danger: #e0705a;
-  --node-balance: #7fa8cc;
-  --node-logic: #a894c8;
-  --node-goal: #5cb87f;
-  --node-debt: #d08a5a;
+  --danger: #e08a8a;
+  --danger-soft: #4a2c2c;
+  --sage: #9db189;
+  --sage-soft: #2c3325;
+  --amber: #d9a441;
+  --amber-soft: #3d3220;
+  --sky: #8fa9c7;
+  --sky-soft: #26303c;
+  --node-balance: #9db8d4;
+  --node-logic: #e3a4bc;
+  --node-goal: #8fc07a;
+  --node-debt: #d89a6a;
   --node-variable: #d9a441;
-  --on-accent: #161511;
+  --on-accent: #1b1917;
+  --sidebar: #121110;
+  --sidebar-2: #2e2a26;
+  --sidebar-ink: #f5f0e6;
+  --sidebar-muted: #a39e93;
+  --shadow-card: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
 }
 
 html, body, #root {
@@ -53,6 +91,20 @@ body {
   font-family: -apple-system, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* Serif display type for headings / greetings / big numbers (Vista). */
+.cf-display, h1.cf-display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+input[type="checkbox"], input[type="radio"] {
+  accent-color: var(--text);
+}
+input[type="range"] {
+  accent-color: var(--text);
 }
 
 .money, .tabular {
@@ -90,11 +142,11 @@ body {
   width: 190px;
   background: var(--surface);
   border: 1.5px solid var(--border);
-  border-radius: 10px;
-  padding: 8px 10px 8px 14px;
+  border-radius: 16px;
+  padding: 10px 12px 10px 16px;
   font-size: 12px;
   color: var(--text);
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  box-shadow: var(--shadow-card);
   position: relative;
 }
 .cf-node.selected {
@@ -166,8 +218,9 @@ body {
   stroke: var(--surface);
   stroke-width: 2;
 }
-.cf-edge-income .cf-money-dot { fill: var(--income); }
+.cf-edge-income .cf-money-dot { fill: var(--sage); }
 .cf-edge-expense .cf-money-dot { fill: var(--expense); }
+.cf-edge-logic .cf-money-dot { fill: var(--amber); }
 .cf-flow-chip {
   position: absolute;
   top: -14px;
@@ -181,14 +234,14 @@ body {
   background: var(--surface);
   border: 1.5px solid currentColor;
   white-space: nowrap;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+  box-shadow: var(--shadow-card);
   animation: cf-flow-pop 0.25s ease-out;
   pointer-events: none;
 }
 .cf-flow-chip.income { color: var(--income); }
 .cf-flow-chip.expense { color: var(--expense); }
 .cf-flow-chip.split { color: var(--node-logic); }
-.cf-flow-chip.balance { color: var(--accent); }
+.cf-flow-chip.balance { color: var(--node-balance); }
 .cf-flow-chip .cf-flow-note {
   display: block;
   font-weight: 400;
@@ -199,7 +252,7 @@ body {
   to { transform: scale(1); opacity: 1; }
 }
 
-.cf-node-goal      { border-top: 5px solid var(--node-goal); border-radius: 4px 10px 10px 10px; }
+.cf-node-goal      { border-top: 5px solid var(--node-goal); border-radius: 6px 16px 16px 16px; }
 .cf-node-goal .cf-node-icon { color: var(--node-goal); }
 .cf-node-goal .cf-flag-tab {
   position: absolute; top: -11px; left: 12px;
@@ -245,7 +298,13 @@ body {
 .cf-panel {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.cf-panel h2 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 .cf-field label {
   display: block; font-size: 11px; font-weight: 600;
@@ -253,8 +312,8 @@ body {
 }
 .cf-field input, .cf-field select {
   width: 100%; font-size: 13px; color: var(--text);
-  background: var(--bg);
-  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border); border-radius: var(--radius-input);
   padding: 6px 8px;
 }
 .cf-field input:focus, .cf-field select:focus {
@@ -267,21 +326,49 @@ body {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 13px; font-weight: 600;
   background: var(--surface); color: var(--text);
-  border: 1px solid var(--border); border-radius: 8px;
+  border: 1px solid var(--border); border-radius: var(--radius-input);
   padding: 6px 12px; cursor: pointer;
+  box-shadow: 0 1px 2px rgb(28 26 23 / 0.05);
 }
 .cf-btn:hover { background: var(--surface-2); }
 .cf-btn:disabled { opacity: 0.45; cursor: default; }
-.cf-btn-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.cf-btn-primary:hover { filter: brightness(1.08); background: var(--accent); }
+/* Vista: the primary action is a dark pill, never a colored button. */
+.cf-btn-primary {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+  border-radius: 999px;
+  padding: 6px 16px;
+}
+.cf-btn-primary:hover { background: var(--text); filter: brightness(1.25); }
 
+/* ---------- dark sidebar (left node rail) ---------- */
+.cf-sidebar {
+  background: var(--sidebar);
+  color: var(--sidebar-ink);
+}
+.cf-sidebar h2 {
+  color: var(--sidebar-muted);
+}
+.cf-sidebar .cf-sidebar-sub {
+  color: var(--sidebar-muted);
+}
 .cf-palette-item {
   display: flex; align-items: center; gap: 8px;
   width: 100%; text-align: left;
-  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
   padding: 7px 9px; font-size: 12px; cursor: grab;
+  color: var(--sidebar-ink);
 }
-.cf-palette-item:hover { background: var(--surface-2); border-color: var(--accent); }
+.cf-palette-item:hover {
+  background: var(--sidebar-2);
+  border-color: transparent;
+}
+.cf-palette-item .cf-palette-blurb {
+  color: var(--sidebar-muted);
+}
 
 /* Reduced motion: kill animations and transitions app-wide (settings → motion). */
 .reduce-motion *,

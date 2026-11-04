@@ -21,6 +21,19 @@ const ORDER: NodeType[] = [
   'debt',
 ];
 
+/** Per-type icon colors tuned for the dark sidebar (readable in both themes). */
+const TYPE_ICON_COLOR: Record<NodeType, string> = {
+  startingBalance: 'var(--sb-balance)',
+  income: 'var(--sb-income)',
+  expense: 'var(--sb-expense)',
+  variableAmount: 'var(--sb-variable)',
+  percentageSplit: 'var(--sb-logic)',
+  prioritySplit: 'var(--sb-logic)',
+  conditional: 'var(--sb-logic)',
+  goal: 'var(--sb-goal)',
+  debt: 'var(--sb-debt)',
+};
+
 export function Palette() {
   const { screenToFlowPosition } = useReactFlow();
 
@@ -39,10 +52,10 @@ export function Palette() {
 
   return (
     <aside className="w-56 shrink-0 overflow-y-auto p-3" aria-label="Node palette">
-      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide">
         Add nodes
       </h2>
-      <p className="mb-3 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+      <p className="cf-sidebar-sub mb-3 text-[11px]">
         Drag onto the canvas, or click to place.
       </p>
       <div className="flex flex-col gap-2">
@@ -55,12 +68,12 @@ export function Palette() {
             onClick={() => addAtCenter(type)}
             title={NODE_META[type].blurb}
           >
-            <span style={{ color: 'var(--accent)' }}>
+            <span style={{ color: TYPE_ICON_COLOR[type] }}>
               <NodeIcon type={type} />
             </span>
             <span>
               <span className="block font-semibold leading-tight">{NODE_META[type].title}</span>
-              <span className="block text-[10px] leading-tight" style={{ color: 'var(--text-muted)' }}>
+              <span className="cf-palette-blurb block text-[10px] leading-tight">
                 {NODE_META[type].blurb}
               </span>
             </span>

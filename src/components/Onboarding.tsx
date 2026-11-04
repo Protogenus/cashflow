@@ -127,7 +127,7 @@ export function Onboarding() {
       ) : (
         <div className="cf-panel w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">See your next 90 days of money</h2>
+            <h2 className="cf-display text-lg">See your next 90 days of money</h2>
             <button className="cf-btn px-2 py-1 text-xs" onClick={skip}>
               Skip
             </button>

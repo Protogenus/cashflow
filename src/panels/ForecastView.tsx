@@ -188,7 +188,7 @@ export function ForecastView({ onOpenAssumptions }: { onOpenAssumptions?: () => 
               Safe to spend
             </div>
             <div
-              className="money text-3xl font-semibold"
+              className="cf-display money text-3xl"
               style={{ color: result.safeToSpendCents < 0 ? 'var(--danger)' : 'var(--text)' }}
             >
               {formatMoneyWhole(result.safeToSpendCents)}

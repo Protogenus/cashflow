@@ -49,11 +49,11 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
   const tabBtn = (id: RightTab, label: string) => (
     <button
       key={id}
-      className="whitespace-nowrap px-2 py-2.5 text-[13px] font-semibold"
+      className="whitespace-nowrap px-2 py-2 text-[13px] font-semibold"
       style={{
         color: tab === id ? 'var(--text)' : 'var(--text-muted)',
-        borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
         background: tab === id ? 'var(--surface-2)' : 'transparent',
+        borderRadius: '10px',
       }}
       onClick={() => setTab(id)}
       aria-selected={tab === id}
@@ -66,7 +66,7 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
 
   return (
     <div className="flex h-full flex-col">
-      <div className="grid grid-cols-3 border-b" style={{ borderColor: 'var(--border)' }} role="tablist" aria-label="Results panels">
+      <div className="grid grid-cols-3 gap-1 border-b p-1.5" style={{ borderColor: 'var(--border)' }} role="tablist" aria-label="Results panels">
         {tabBtn('forecast', 'Forecast')}
         {tabBtn('alerts', 'Alerts')}
         {tabBtn('scenarios', 'Scenarios')}
@@ -346,10 +346,10 @@ export function App() {
         </a>
         <header
           className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b px-4 py-2"
-          style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
+          style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
         >
           <div>
-            <h1 className="text-base font-semibold leading-tight">Cash-Flow Planner</h1>
+            <h1 className="cf-display text-lg leading-tight">Cash-Flow Planner</h1>
             <p className="text-[11px] leading-tight" style={{ color: 'var(--text-muted)' }}>
               Based on your inputs — not financial advice.
             </p>
@@ -447,7 +447,7 @@ export function App() {
           </div>
         ) : (
         <div className="flex min-h-0 flex-1">
-          <div className="border-r" style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
+          <div className="cf-sidebar shrink-0">
             <Palette />
           </div>
           <main className="min-w-0 flex-1 relative" aria-label="Canvas">

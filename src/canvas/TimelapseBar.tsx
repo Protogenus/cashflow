@@ -38,7 +38,7 @@ export function TimelapseBar() {
     return (
       <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center">
         <button
-          className="cf-btn pointer-events-auto px-4 py-2 text-[13px] font-semibold shadow-md"
+          className="cf-btn cf-btn-primary pointer-events-auto px-5 py-2.5 text-[13px] font-semibold shadow-md"
           onClick={start}
           title="Play a day-by-day timelapse of how money moves through your graph"
         >
@@ -103,7 +103,7 @@ export function TimelapseBar() {
               Window{' '}
               <select
                 className="rounded border px-1 py-0.5 text-xs"
-                style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+                style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
                 value={windowDays}
                 onChange={(e) => setWindowDays(Number(e.target.value))}
                 aria-label="Timelapse window in days"
@@ -119,7 +119,7 @@ export function TimelapseBar() {
               Speed{' '}
               <select
                 className="rounded border px-1 py-0.5 text-xs"
-                style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
+                style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
                 value={speed}
                 onChange={(e) => setSpeed(Number(e.target.value))}
                 aria-label="Timelapse speed"
