@@ -46,12 +46,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ title, blurb, control }: { title: string; blurb: string; control: React.ReactNode }) {
   return (
-    <div className="cf-panel flex items-center gap-2 p-3">
-      <div className="flex-1">
+    <div className="cf-panel flex flex-col gap-2 p-3">
+      <div>
         <div className="text-xs font-semibold">{title}</div>
         <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{blurb}</div>
       </div>
-      {control}
+      <div className="flex flex-wrap items-center gap-1">{control}</div>
     </div>
   );
 }

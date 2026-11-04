@@ -473,11 +473,22 @@ export function NodeEditor({ nodeId }: { nodeId: NodeId | null }) {
   const activeScenario = useScenarioStore((s) => s.scenarios.find((x) => x.id === s.activeScenarioId) ?? s.scenarios[0]);
   const toggleNodeDisabled = useScenarioStore((s) => s.toggleNodeDisabled);
 
+  const selectedCount = useGraphStore((s) => s.selectedNodeIds.length);
+
   if (!node) {
     return (
       <div className="p-4 text-[13px]" style={{ color: 'var(--text-muted)' }}>
-        <p className="font-semibold" style={{ color: 'var(--text)' }}>Nothing selected</p>
-        <p className="mt-1">Click a node to edit its amount, schedule, and rules. Drag a node from the palette to add one.</p>
+        {selectedCount > 1 ? (
+          <>
+            <p className="font-semibold" style={{ color: 'var(--text)' }}>{selectedCount} nodes selected</p>
+            <p className="mt-1">Drag any of them to move the group together. Click a single node to edit it. Delete removes all selected.</p>
+          </>
+        ) : (
+          <>
+            <p className="font-semibold" style={{ color: 'var(--text)' }}>Nothing selected</p>
+            <p className="mt-1">Click a node to edit its amount, schedule, and rules. Drag a node from the palette to add one.</p>
+          </>
+        )}
       </div>
     );
   }

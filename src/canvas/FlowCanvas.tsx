@@ -38,7 +38,7 @@ function edgeClass(source: PlanNode | undefined): string {
 export function FlowCanvas() {
   const nodes = useGraphStore((s) => s.nodes);
   const edges = useGraphStore((s) => s.edges);
-  const selectedNodeId = useGraphStore((s) => s.selectedNodeId);
+  const selectedNodeIds = useGraphStore((s) => s.selectedNodeIds);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
@@ -60,7 +60,7 @@ export function FlowCanvas() {
           id: n.id,
           type: n.type,
           position: n.position,
-          selected: n.id === selectedNodeId,
+          selected: selectedNodeIds.includes(n.id),
           // DESIGN.md §9: nodes exposed as named buttons for screen readers.
           ariaLabel:
             `${NODE_META[n.type].title} node: ${n.label}, ${status.primary}` +
@@ -70,7 +70,7 @@ export function FlowCanvas() {
           data: { node: n, status, orphaned: orphanIds.has(n.id), disabled },
         };
       }),
-    [nodes, selectedNodeId, orphanIds, disabledIds, graph],
+    [nodes, selectedNodeIds, orphanIds, disabledIds, graph],
   );
 
   const rfEdges: Edge[] = useMemo(
@@ -97,7 +97,11 @@ export function FlowCanvas() {
         if (c.type === 'position' && c.position) {
           st.moveNode(c.id, c.position); // silent; history grouped by drag start/stop
         } else if (c.type === 'select') {
-          st.setSelected(c.selected ? c.id : null);
+          // Accumulate into the multi-selection set (marquee / shift-click).
+          const ids = new Set(st.selectedNodeIds);
+          if (c.selected) ids.add(c.id);
+          else ids.delete(c.id);
+          st.setSelectedMany([...ids]);
           if (c.selected) setSelectedEdgeId(null);
         }
       }
@@ -142,8 +146,8 @@ export function FlowCanvas() {
       if (selectedEdgeId) {
         st.deleteEdge(selectedEdgeId);
         setSelectedEdgeId(null);
-      } else if (st.selectedNodeId) {
-        st.deleteNode(st.selectedNodeId);
+      } else if (st.selectedNodeIds.length > 0) {
+        st.deleteSelected();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -156,6 +160,8 @@ export function FlowCanvas() {
       edges={rfEdges}
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
+      selectionOnDrag
+      panOnDrag={[1, 2]}
       onConnect={onConnect}
       onNodeDragStart={() => useGraphStore.getState().beginDrag()}
       onNodeDragStop={() => useGraphStore.getState().endDrag()}
@@ -174,7 +180,7 @@ export function FlowCanvas() {
       minZoom={0.2}
       maxZoom={2}
       className="cf-canvas"
-      aria-label="Money plan canvas. Tab to move between nodes; Enter edits the focused node."
+      aria-label="Money plan canvas. Drag on empty canvas to select several nodes, then drag them to move together. Tab moves between nodes; Enter edits the focused node."
     >
       <Background variant={BackgroundVariant.Dots} gap={24} size={1.5} />
       <Controls showInteractive={false} />

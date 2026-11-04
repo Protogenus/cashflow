@@ -48,10 +48,11 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
   const tabBtn = (id: RightTab, label: string) => (
     <button
       key={id}
-      className="shrink-0 whitespace-nowrap px-2 py-2 text-[11px] font-semibold md:flex-1 md:px-1"
+      className="whitespace-nowrap px-2 py-2.5 text-[13px] font-semibold"
       style={{
         color: tab === id ? 'var(--text)' : 'var(--text-muted)',
         borderBottom: tab === id ? '2px solid var(--accent)' : '2px solid transparent',
+        background: tab === id ? 'var(--surface-2)' : 'transparent',
       }}
       onClick={() => setTab(id)}
       aria-selected={tab === id}
@@ -64,13 +65,13 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex overflow-x-auto border-b" style={{ borderColor: 'var(--border)' }} role="tablist" aria-label="Results panels">
+      <div className="grid grid-cols-3 border-b" style={{ borderColor: 'var(--border)' }} role="tablist" aria-label="Results panels">
         {tabBtn('forecast', 'Forecast')}
         {tabBtn('alerts', 'Alerts')}
         {tabBtn('scenarios', 'Scenarios')}
         {tabBtn('optimizer', 'Optimizer')}
-        {tabBtn('montecarlo', 'MC')}
-        {tabBtn('tradeoff', 'Tradeoff')}
+        {tabBtn('montecarlo', 'Monte Carlo')}
+        {tabBtn('tradeoff', 'Trade-off')}
         {tabBtn('inspector', 'Inspector')}
         {tabBtn('assumptions', 'Assumptions')}
         {tabBtn('settings', 'Settings')}
@@ -453,7 +454,7 @@ export function App() {
           <aside
             id="cf-results"
             tabIndex={-1}
-            className="w-80 shrink-0 border-l"
+            className="w-[24rem] shrink-0 border-l"
             style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
             aria-label="Inspector and forecast"
           >

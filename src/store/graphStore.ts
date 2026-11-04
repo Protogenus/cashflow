@@ -25,6 +25,9 @@ interface GraphStore {
   nodes: PlanNode[];
   edges: PlanEdge[];
   selectedNodeId: NodeId | null;
+  /** Full multi-selection (marquee / shift-click). selectedNodeId is the
+   *  single-selection convenience: the id when exactly one node is selected. */
+  selectedNodeIds: NodeId[];
   toast: string | null;
   past: Snapshot[];
   future: Snapshot[];
@@ -45,10 +48,14 @@ interface GraphStore {
   loadGraph: (nodes: PlanNode[], edges: PlanEdge[]) => void;
   /** Delete key: one history step (node + incident edges). */
   deleteNode: (id: NodeId) => void;
+  /** Delete every selected node (+ incident edges) as one history step. */
+  deleteSelected: () => void;
   /** Canvas connect: validates via the engine; one history step on success. */
   connectNodes: (source: NodeId, target: NodeId, sourceHandle: string, targetHandle: string) => void;
   deleteEdge: (id: string) => void;
   setSelected: (id: NodeId | null) => void;
+  /** Marquee / shift-click selection. Keeps selectedNodeId in sync. */
+  setSelectedMany: (ids: NodeId[]) => void;
   dismissToast: () => void;
 
   // --- history grouping ---
@@ -85,6 +92,7 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
   return {
     ...createStarterGraph(),
     selectedNodeId: null,
+    selectedNodeIds: [],
     toast: null,
     past: [],
     future: [],
@@ -92,7 +100,7 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
     addNode: (node) => {
       const { nodes, edges } = get();
       pushHistory(snap(nodes, edges));
-      set({ nodes: [...nodes, node], selectedNodeId: node.id });
+      set({ nodes: [...nodes, node], selectedNodeId: node.id, selectedNodeIds: [node.id] });
     },
 
     updateNode: (id, updater) => {
@@ -106,12 +114,26 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
     },
 
     deleteNode: (id) => {
-      const { nodes, edges, selectedNodeId } = get();
+      const { nodes, edges, selectedNodeId, selectedNodeIds } = get();
       pushHistory(snap(nodes, edges));
       set({
         nodes: nodes.filter((n) => n.id !== id),
         edges: edges.filter((e) => e.source !== id && e.target !== id),
         selectedNodeId: selectedNodeId === id ? null : selectedNodeId,
+        selectedNodeIds: selectedNodeIds.filter((x) => x !== id),
+      });
+    },
+
+    deleteSelected: () => {
+      const { nodes, edges, selectedNodeIds } = get();
+      if (selectedNodeIds.length === 0) return;
+      const gone = new Set(selectedNodeIds);
+      pushHistory(snap(nodes, edges));
+      set({
+        nodes: nodes.filter((n) => !gone.has(n.id)),
+        edges: edges.filter((e) => !gone.has(e.source) && !gone.has(e.target)),
+        selectedNodeId: null,
+        selectedNodeIds: [],
       });
     },
 
@@ -139,7 +161,12 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
       set({ edges: edges.filter((e) => e.id !== id) });
     },
 
-    setSelected: (id) => set({ selectedNodeId: id }),
+    setSelected: (id) => set({ selectedNodeId: id, selectedNodeIds: id ? [id] : [] }),
+    setSelectedMany: (ids) =>
+      set({
+        selectedNodeIds: [...ids],
+        selectedNodeId: ids.length === 1 ? ids[0] : null,
+      }),
     dismissToast: () => set({ toast: null }),
 
     loadGraph: (nodes, edges) =>
@@ -147,6 +174,7 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
         nodes: structuredClone(nodes),
         edges: structuredClone(edges),
         selectedNodeId: null,
+        selectedNodeIds: [],
         past: [],
         future: [],
       }),
@@ -190,6 +218,7 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
         past: past.slice(0, -1),
         future: [...future, snap(nodes, edges)],
         selectedNodeId: null,
+        selectedNodeIds: [],
       });
     },
     redo: () => {
@@ -202,6 +231,7 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
         past: [...past, snap(nodes, edges)],
         future: future.slice(0, -1),
         selectedNodeId: null,
+        selectedNodeIds: [],
       });
     },
   };

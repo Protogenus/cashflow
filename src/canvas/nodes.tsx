@@ -52,16 +52,18 @@ function Status({ status }: { status: CardStatus }) {
   );
 }
 
-/** Rectangular card shell (balance / income / expense / variable / goal / debt). */
+/** Rectangular card shell (balance / income / expense / variable / goal / debt / splits). */
 function RectShell({
-  data, selected, className, chevron, flagTab, handles,
+  data, selected, className, chevron, flagTab, handles, outputs,
 }: NodeProps & {
   className: string;
   chevron?: boolean;
   flagTab?: boolean;
-  handles: React.ReactNode;
+  handles?: React.ReactNode;
+  outputs?: { id: string; label: string }[];
 }) {
   const { node, status, orphaned, disabled } = data;
+  const n = outputs?.length ?? 0;
   return (
     <div className={`cf-node ${className}${selected ? ' selected' : ''}${disabled ? ' cf-node-disabled' : ''}`} title={node.label}>
       {chevron && <span className="cf-edge-chevron" aria-hidden="true" />}
@@ -70,6 +72,22 @@ function RectShell({
       <Label node={node} />
       <Status status={status} />
       {handles}
+      {outputs && (
+        <>
+          <Handle type="target" position={Position.Left} id="in" aria-label="input" />
+          {outputs.map((o, i) => (
+            <Handle
+              key={o.id}
+              type="source"
+              position={Position.Right}
+              id={o.id}
+              style={{ top: n === 1 ? '50%' : `${((i + 1) / (n + 1)) * 100}%` }}
+              aria-label={`output ${o.label}`}
+              title={o.label}
+            />
+          ))}
+        </>
+      )}
     </div>
   );
 }
@@ -117,63 +135,24 @@ export function DebtNode(props: NodeProps) {
   );
 }
 
-/** Diamond shell shared by the two split nodes. */
-function DiamondShell({
-  data, selected, badge, outputs,
-}: NodeProps & { badge?: React.ReactNode; outputs: { id: string; label: string }[] }) {
-  const { node, status, orphaned, disabled } = data;
-  const n = outputs.length;
-  return (
-    <div className={`cf-diamond-wrap${selected ? ' selected' : ''}${disabled ? ' cf-node-disabled' : ''}`} title={node.label}>
-      {orphaned && <OrphanBadge />}
-      {badge}
-      <div className="cf-diamond" aria-hidden="true" />
-      <div className="cf-diamond-content">
-        <div className="cf-node-label">
-          <span className="cf-node-icon">
-            <NodeIcon type={node.type} />
-          </span>
-          <span>{node.label}</span>
-        </div>
-        <div className="cf-node-status money">{status.primary}</div>
-        {status.secondary && <div className="cf-node-status">{status.secondary}</div>}
-      </div>
-      <Handle type="target" position={Position.Left} id="in" style={{ top: '50%' }} aria-label="input" />
-      {outputs.map((o, i) => (
-        <Handle
-          key={o.id}
-          type="source"
-          position={Position.Right}
-          id={o.id}
-          style={{ top: `${((i + 1) / (n + 1)) * 100}%` }}
-          aria-label={`output ${o.label}`}
-          title={o.label}
-        />
-      ))}
-    </div>
-  );
+/** Rectangular split shell — same card as every other node, with one output
+ *  handle per split branch along the right edge. */
+function SplitShell({
+  data, selected, outputs,
+}: NodeProps & { outputs: { id: string; label: string }[] }) {
+  return <RectShell data={data} selected={selected} className="cf-node-split" outputs={outputs} />;
 }
 
 export function PercentageSplitNode(props: NodeProps) {
   const node = props.data.node;
   const outputs = node.type === 'percentageSplit' ? node.outputs : [];
-  return <DiamondShell {...props} outputs={outputs} />;
+  return <SplitShell {...props} outputs={outputs} />;
 }
 
 export function PrioritySplitNode(props: NodeProps) {
   const node = props.data.node;
   const outputs = node.type === 'prioritySplit' ? node.outputs : [];
-  return (
-    <DiamondShell
-      {...props}
-      outputs={outputs}
-      badge={
-        <span className="cf-priority-badge" title="Priority order">
-          <NodeIcon type="prioritySplit" />
-        </span>
-      }
-    />
-  );
+  return <SplitShell {...props} outputs={outputs} />;
 }
 
 export function ConditionalNode(props: NodeProps) {
