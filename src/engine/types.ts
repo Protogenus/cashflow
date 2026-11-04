@@ -180,6 +180,16 @@ export interface ShockEvent {
   windowDays: [number, number]; // e.g. [0, 90]
   probability: number; // per-trial occurrence probability
   enabled: boolean;
+  /**
+   * 'oneTime': a one-time expense on a date (e.g. $600 car repair).
+   * 'missedPaycheck': skip one occurrence of an income node.
+   * Default 'oneTime'.
+   */
+  kind?: 'oneTime' | 'missedPaycheck';
+  /** Fixed date for oneTime shocks (default: a random day inside windowDays). */
+  date?: ISODate;
+  /** Income node to skip one occurrence of (missedPaycheck only). */
+  incomeNodeId?: NodeId;
 }
 
 // ---------- engine outputs ----------

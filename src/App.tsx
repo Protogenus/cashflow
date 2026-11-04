@@ -11,8 +11,9 @@ import { Palette } from './canvas/Palette';
 import { Inspector } from './canvas/Inspector';
 import { ForecastView } from './panels/ForecastView';
 import { ScenariosPanel } from './panels/ScenariosPanel';
+import { OptimizerView } from './panels/OptimizerView';
 
-type RightTab = 'forecast' | 'scenarios' | 'inspector';
+type RightTab = 'forecast' | 'scenarios' | 'optimizer' | 'inspector';
 
 function RightPanel() {
   const [tab, setTab] = useState<RightTab>('forecast');
@@ -43,11 +44,13 @@ function RightPanel() {
       <div className="flex border-b" style={{ borderColor: 'var(--border)' }} role="tablist">
         {tabBtn('forecast', 'Forecast')}
         {tabBtn('scenarios', 'Scenarios')}
+        {tabBtn('optimizer', 'Optimizer')}
         {tabBtn('inspector', 'Inspector')}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto" role="tabpanel">
         {tab === 'forecast' && <ForecastView />}
         {tab === 'scenarios' && <ScenariosPanel />}
+        {tab === 'optimizer' && <OptimizerView />}
         {tab === 'inspector' && <Inspector />}
       </div>
     </div>

@@ -221,6 +221,12 @@ export interface ForecastOptions {
   /** Skip the assumptions hash (optimizer / Monte Carlo fast path — hashing
    *  the graph per candidate/run dominates runtime at 10k+ calls). */
   skipHash?: boolean;
+  /**
+   * Skip graph validation (optimizer fast path — the base graph was already
+   * validated and candidates differ only in split percents, which sum to 100
+   * by construction). Never set for user-supplied graphs.
+   */
+  skipValidation?: boolean;
   /** Monte Carlo per-run sampled amounts for variableAmount nodes. */
   variableOverrides?: Record<NodeId, Cents>;
   /** Monte Carlo shock events injected as one-time expenses. */
@@ -454,7 +460,7 @@ export function forecast(
           edges: graph.edges.filter((e) => !disabled.has(e.source) && !disabled.has(e.target)),
         };
 
-  const validation = validateGraph(active);
+  const validation = opts.skipValidation ? { valid: true, errors: [], warnings: [] } : validateGraph(active);
   if (!validation.valid) {
     throw new Error(
       `Cannot forecast an invalid graph: ${validation.errors.map((e) => e.message).join(' ')}`,
@@ -487,9 +493,19 @@ export function forecast(
     if (list) list.push(ev);
     else byDate.set(ev.date, [ev]);
   }
+  // Income before expenses on the same day (visible, editable assumption).
+  // Sorted once here — not per walk-day — so the hot loop stays allocation-light.
+  if (assumptions.sameDayOrder === 'incomeFirst') {
+    for (const list of byDate.values()) {
+      list.sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'income' ? -1 : 1));
+    }
+  }
 
   const goalNodes = active.nodes.filter((n) => n.type === 'goal');
   const debtNodes = active.nodes.filter((n) => n.type === 'debt');
+  const goalById = new Map<NodeId, Extract<PlanNode, { type: 'goal' }>>(
+    goalNodes.filter((n): n is Extract<PlanNode, { type: 'goal' }> => n.type === 'goal').map((g) => [g.id, g]),
+  );
   const saved = new Map<NodeId, Cents>(goalNodes.map((n) => [n.id, 0]));
   const hitDate = new Map<NodeId, ISODate>();
   const savedAtTarget = new Map<NodeId, Cents>(goalNodes.map((n) => [n.id, 0]));
@@ -503,8 +519,8 @@ export function forecast(
       const amt = parts[i];
       if (sink.kind === 'goal') {
         saved.set(sink.nodeId, (saved.get(sink.nodeId) ?? 0) + amt);
-        const goal = goalNodes.find((g) => g.id === sink.nodeId);
-        if (goal && goal.type === 'goal' && !hitDate.has(sink.nodeId) && (saved.get(sink.nodeId) ?? 0) >= goal.targetCents) {
+        const goal = goalById.get(sink.nodeId);
+        if (goal && !hitDate.has(sink.nodeId) && (saved.get(sink.nodeId) ?? 0) >= goal.targetCents) {
           hitDate.set(sink.nodeId, date);
         }
       } else {
@@ -521,13 +537,8 @@ export function forecast(
   for (let d = 0; d < horizonDays; d++) {
     const date = formatISODate(addDays(start, d));
     const dayEvents = byDate.get(date) ?? [];
-    // Income before expenses on the same day (visible, editable assumption).
-    const ordered =
-      assumptions.sameDayOrder === 'incomeFirst'
-        ? [...dayEvents].sort((a, b) => (a.kind === b.kind ? 0 : a.kind === 'income' ? -1 : 1))
-        : dayEvents;
     const ledgerEvents: LedgerEvent[] = [];
-    for (const ev of ordered) {
+    for (const ev of dayEvents) {
       const signed = ev.kind === 'income' ? ev.amountCents : -ev.amountCents;
       balance += signed;
       ledgerEvents.push({

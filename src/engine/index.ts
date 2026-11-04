@@ -11,6 +11,8 @@ export * from './recurrence';
 export * from './rng';
 export * from './explain';
 export { forecast, generateEvents } from './forecast';
+export { optimize, applySplits, compositions, type OptimizeOptions, type OptimizeResult, type OptimizerCandidate, type OptimizerGoal, type CandidateSplits, type ScoreBreakdown, type BlendWeights, type BlendComponents, type DeadSplit } from './optimize';
+export { runMonteCarlo, computePercentiles, runSeed, type MonteCarloOptions, type MonteCarloResult, type BandPoint, type FailedTrial } from './montecarlo';
 export {
   topologicalOrder,
   wouldCreateCycle,

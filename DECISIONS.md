@@ -106,6 +106,12 @@ Format for each entry:
 - **Decision:** Income wired into a percentageSplit is divided per output; shares routed to goal or debt sinks LEAVE the spendable balance walk as `transfer` ledger events (the money genuinely moves to savings / extra principal). Shares routed to expense outputs or nowhere stay spendable (money is fungible; the earmark moves no cash). Goal nodes accumulate routed money (hit date, shortfall at target date); debt nodes accumulate extra principal. Direct income → goal/debt edges route 100%. Transfers are excluded from pinch-point driver analysis (allocations are not bills). The debt node's own minimum payment stays unmodeled in the walk (as in milestone 3 — many users model it as a separate expense node); the optimizer scores debt payoff via an extended `projectDebtPayoff(debt, from, extraMonthlyCents)`.
 - **Consequences:** Graphs without goal/debt-routed splits forecast byte-identically to milestone 3 (all 85 pre-existing tests pass unchanged). The optimizer's objectives now have real gradients: savings-goal shortfall, spendable minimum, debt payoff date.
 
+## 2026-11-03 — Optimizer: dead-split exclusion + search-space guard
+- **Status:** decided
+- **Context:** A split only moves the forecast when it routes income into a goal or debt sink (allocation semantics). Searching splits that can't move any number returns arbitrary "winners" — noise presented as optimization.
+- **Decision:** `optimize()` computes liveness per split via `buildAllocationPlan`: excluded when no income is wired in, when its income is already claimed by another split (first split in node order wins), or when no output reaches a goal/debt. Excluded splits are reported with reasons (`excludedSplits`) and the search note says so in plain language. Search space: 5% grid; beyond 50k combos coarsen to 10%; beyond that a seeded sample (reproducible) — `searchMode`/`stepUsed`/`searchNote` always tell the UI what ran.
+- **Consequences:** The optimizer throws a clear, actionable error when nothing is live ("wire a split output to a goal or debt node") instead of returning junk. Measured: 4 live 2-output splits × 90 days = 14,641 combos in ~2.1–2.6s on this VM (under the 3s budget); typical 1–2 split searches finish in tens of ms.
+
 ## Template for future decisions
 
 ```
