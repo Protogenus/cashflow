@@ -27,7 +27,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "build:web": "tsc -b && vite build",
+    "build:web": "tsc -b && vite build --config vite.web.config.ts",
     "preview": "electron-vite preview",
     "dist": "npm run build && electron-builder --win --x64 --publish never",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
