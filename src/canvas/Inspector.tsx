@@ -294,6 +294,32 @@ function RecurringFields({ node }: { node: RecurringNode }) {
       )}
       {node.type === 'variableAmount' && (
         <>
+          <div>
+            <span className="mb-1 block text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>
+              Direction
+            </span>
+            <div className="flex gap-1" role="group" aria-label="Money direction">
+              {(['expense', 'income'] as const).map((d) => (
+                <button
+                  key={d}
+                  className={`cf-btn flex-1 px-3 py-1 text-xs ${(node.direction ?? 'expense') === d ? 'cf-btn-primary' : ''}`}
+                  aria-pressed={(node.direction ?? 'expense') === d}
+                  onClick={() => {
+                    changed();
+                    patch((n) => (n.type === 'variableAmount' ? { ...n, direction: d } : n));
+                    blur();
+                  }}
+                >
+                  {d === 'expense' ? 'Money out (bill)' : 'Money in (income)'}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              {node.direction === 'income'
+                ? 'Emits the typical value as income; Monte Carlo samples the min/typical/max range.'
+                : 'Emits the typical value as a bill; Monte Carlo samples the min/typical/max range.'}
+            </p>
+          </div>
           <LabeledMoney label="Minimum" cents={node.minCents} onCommit={(c) => { changed(); patch((n) => (n.type === 'variableAmount' ? { ...n, minCents: c } : n)); }} onBlur={blur} />
           <LabeledMoney label="Typical" cents={node.typicalCents} onCommit={(c) => { changed(); patch((n) => (n.type === 'variableAmount' ? { ...n, typicalCents: c } : n)); }} onBlur={blur} />
           <LabeledMoney label="Maximum" cents={node.maxCents} onCommit={(c) => { changed(); patch((n) => (n.type === 'variableAmount' ? { ...n, maxCents: c } : n)); }} onBlur={blur} />

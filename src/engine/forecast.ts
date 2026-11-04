@@ -13,6 +13,7 @@
 import { addDays, formatISODate, parseISODate, toLocalDate, todayISO } from './dates';
 import { findDrivers } from './explain';
 import { expandRecurrence, type Occurrence } from './recurrence';
+import { isIncomeSource } from './types';
 import type {
   Assumptions,
   Cents,
@@ -326,7 +327,7 @@ export function buildAllocationPlan(graph: PlanGraph): AllocationPlan {
     for (const e of graph.edges) {
       if (e.target !== node.id) continue;
       const src = byId.get(e.source);
-      if (src?.type === 'income' && !incomeIds.includes(src.id)) incomeIds.push(src.id);
+      if (src && isIncomeSource(src) && !incomeIds.includes(src.id)) incomeIds.push(src.id);
     }
     const outputs = node.outputs.map((o) => {
       const sinks: SinkRoute[] = [];
@@ -349,7 +350,7 @@ export function buildAllocationPlan(graph: PlanGraph): AllocationPlan {
   for (const e of graph.edges) {
     const src = byId.get(e.source);
     const tgt = byId.get(e.target);
-    if (src?.type !== 'income' || routedIncome.has(src.id)) continue;
+    if (!src || !isIncomeSource(src) || routedIncome.has(src.id)) continue;
     if (tgt?.type === 'goal' || tgt?.type === 'debt') {
       const list = directSinks.get(src.id) ?? [];
       list.push({ nodeId: tgt.id, kind: tgt.type, name: tgt.name });
@@ -412,23 +413,29 @@ export function generateEvents(
           ),
         );
         break;
-      case 'variableAmount':
+      case 'variableAmount': {
         // Deterministic mode emits the typical value (ARCHITECTURE.md §2.1);
-        // Monte Carlo overrides it per run with a sampled amount.
-        out.push(
-          ...expandRecurrence(
-            {
-              nodeId: node.id,
-              name: node.name,
-              kind: 'expense',
-              amountCents: opts.variableOverrides?.[node.id] ?? node.typicalCents,
-              recurrence: node.recurrence,
-            },
-            startISO,
-            horizonDays,
-          ),
+        // Monte Carlo overrides it per run with a sampled amount. Income-
+        // direction variables emit inflows (the irregular-income case); the
+        // same skipIncomeOccurrences mechanism backs missed-paycheck shocks.
+        const kind = node.direction === 'income' ? 'income' : 'expense';
+        const occs = expandRecurrence(
+          {
+            nodeId: node.id,
+            name: node.name,
+            kind,
+            amountCents: opts.variableOverrides?.[node.id] ?? node.typicalCents,
+            recurrence: node.recurrence,
+          },
+          startISO,
+          horizonDays,
         );
+        const skip = new Set(opts.skipIncomeOccurrences?.[node.id] ?? []);
+        occs.forEach((o, i) => {
+          if (!skip.has(i)) out.push(o);
+        });
         break;
+      }
       default:
         break; // logic/goal/debt nodes emit no balance events in the deterministic walk
     }
@@ -673,13 +680,14 @@ export function computeSplitPreview(graph: PlanGraph, splitId: NodeId): SplitPre
   for (const e of graph.edges) {
     if (e.target === splitId) {
       const src = graph.nodes.find((n) => n.id === e.source);
-      if (src?.type === 'income') incomingIncome.add(src.id);
+      if (src && isIncomeSource(src)) incomingIncome.add(src.id);
     }
   }
   let ofAmountCents = 0;
   for (const id of incomingIncome) {
     const inc = graph.nodes.find((n) => n.id === id);
     if (inc?.type === 'income') ofAmountCents += inc.amountCents;
+    else if (inc?.type === 'variableAmount') ofAmountCents += inc.typicalCents;
   }
   return split.outputs.map((o) => ({
     id: o.id,

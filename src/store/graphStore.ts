@@ -36,6 +36,13 @@ interface GraphStore {
   updateNode: (id: NodeId, updater: (n: PlanNode) => PlanNode) => void;
   /** Canvas drag: NO history (call beginDrag/endDrag around the gesture). */
   moveNode: (id: NodeId, position: { x: number; y: number }) => void;
+  /**
+   * Replace the entire graph (template load, onboarding build, import).
+   * Resets undo history — cross-graph undo would be surprising (same rule
+   * as scenario switches). The scenario mirror persists it into the active
+   * scenario automatically.
+   */
+  loadGraph: (nodes: PlanNode[], edges: PlanEdge[]) => void;
   /** Delete key: one history step (node + incident edges). */
   deleteNode: (id: NodeId) => void;
   /** Canvas connect: validates via the engine; one history step on success. */
@@ -134,6 +141,15 @@ export const useGraphStore = create<GraphStore>()((set, get) => {
 
     setSelected: (id) => set({ selectedNodeId: id }),
     dismissToast: () => set({ toast: null }),
+
+    loadGraph: (nodes, edges) =>
+      set({
+        nodes: structuredClone(nodes),
+        edges: structuredClone(edges),
+        selectedNodeId: null,
+        past: [],
+        future: [],
+      }),
 
     beginEdit: () => {
       if (!editAnchor) {

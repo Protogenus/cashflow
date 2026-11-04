@@ -15,6 +15,9 @@ import { ScenariosPanel } from './panels/ScenariosPanel';
 import { OptimizerView } from './panels/OptimizerView';
 import { MonteCarloView } from './panels/MonteCarloView';
 import { TradeoffView } from './panels/TradeoffView';
+import { Onboarding } from './components/Onboarding';
+import { TemplatePicker } from './components/TemplatePicker';
+import { useSettingsStore } from './store/settingsStore';
 
 type RightTab = 'forecast' | 'alerts' | 'scenarios' | 'optimizer' | 'montecarlo' | 'tradeoff' | 'inspector';
 
@@ -136,6 +139,8 @@ export function App() {
   const redo = useGraphStore((s) => s.redo);
   const pastLen = useGraphStore((s) => s.past.length);
   const futureLen = useGraphStore((s) => s.future.length);
+  const onboardingComplete = useSettingsStore((s) => s.onboardingComplete);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Global undo/redo shortcuts (canvas Delete handling lives in FlowCanvas).
   useEffect(() => {
@@ -177,6 +182,13 @@ export function App() {
             </button>
             <button
               className="cf-btn"
+              onClick={() => setShowTemplates(true)}
+              title="Load a starter template or clear the canvas"
+            >
+              Templates
+            </button>
+            <button
+              className="cf-btn"
               onClick={() => setDark(!dark)}
               title={dark ? 'Switch to light theme' : 'Switch to dark theme'}
             >
@@ -201,6 +213,8 @@ export function App() {
           </aside>
         </div>
         <Toast />
+        {!onboardingComplete && <Onboarding />}
+        {showTemplates && <TemplatePicker onClose={() => setShowTemplates(false)} />}
       </div>
     </ReactFlowProvider>
   );

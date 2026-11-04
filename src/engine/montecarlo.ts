@@ -19,13 +19,14 @@ import { findDrivers } from './explain';
 import { forecast, generateEvents, validateGraph, type ExtraExpense } from './forecast';
 import { expandRecurrence } from './recurrence';
 import { mulberry32, triangularSample } from './rng';
-import type {
-  Assumptions,
-  Cents,
-  Driver,
-  ISODate,
-  NodeId,
-  PlanGraph,
+import {
+  isIncomeSource,
+  type Assumptions,
+  type Cents,
+  type Driver,
+  type ISODate,
+  type NodeId,
+  type PlanGraph,
 } from './types';
 
 export interface MonteCarloOptions {
@@ -144,7 +145,7 @@ export function runMonteCarlo(
 
   const variableNodes = active.nodes.filter((n) => n.type === 'variableAmount');
   const incomeNodes = new Map<NodeId, PlanGraph['nodes'][number]>();
-  for (const n of active.nodes) if (n.type === 'income') incomeNodes.set(n.id, n);
+  for (const n of active.nodes) if (isIncomeSource(n)) incomeNodes.set(n.id, n);
 
   // Bill template: expense/variable occurrences are identical across runs
   // except for sampled amounts, so expand once and reuse.
@@ -163,7 +164,13 @@ export function runMonteCarlo(
     });
 
   // Rent designation: a /rent/i expense node, else the largest monthly expense.
-  const expenseNodes = active.nodes.filter((n) => n.type === 'expense' || n.type === 'variableAmount');
+  // Income-direction variable nodes are never bills (they emit inflows).
+  // Explicit `: boolean` — without it TS 5.5's inferred filter predicate
+  // collapses the `!isIncomeSource(n)` disjunct to `never`, typing the
+  // array as ExpenseNode[] and breaking the variableAmount branch below.
+  const expenseNodes = active.nodes.filter(
+    (n): boolean => n.type === 'expense' || (n.type === 'variableAmount' && !isIncomeSource(n)),
+  );
   let rentId: NodeId | null = null;
   const rentNamed = expenseNodes.find((n) => /rent/i.test(n.type === 'expense' || n.type === 'variableAmount' ? n.name : ''));
   if (rentNamed) {
@@ -171,7 +178,9 @@ export function runMonteCarlo(
   } else {
     let best = -1;
     for (const n of expenseNodes) {
-      const amt = n.type === 'expense' ? n.amountCents : n.typicalCents;
+      let amt = -1;
+      if (n.type === 'expense') amt = n.amountCents;
+      else if (n.type === 'variableAmount') amt = n.typicalCents;
       if (amt > best) {
         best = amt;
         rentId = n.id;
@@ -212,13 +221,13 @@ export function runMonteCarlo(
       shockFired.set(shock.id, (shockFired.get(shock.id) ?? 0) + 1);
       if (shock.kind === 'missedPaycheck' && shock.incomeNodeId) {
         const node = incomeNodes.get(shock.incomeNodeId);
-        if (node?.type === 'income') {
+        if (node && isIncomeSource(node)) {
           const count = expandRecurrence(
             {
               nodeId: node.id,
               name: node.name,
               kind: 'income',
-              amountCents: node.amountCents,
+              amountCents: node.type === 'income' ? node.amountCents : node.typicalCents,
               recurrence: node.recurrence,
             },
             startISO,

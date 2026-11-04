@@ -77,6 +77,23 @@ export interface VariableAmountNode extends BaseNode {
   typicalCents: Cents;
   maxCents: Cents;
   recurrence: Recurrence;
+  /**
+   * Money direction. 'expense' (the default when absent) behaves exactly as
+   * before — the node emits outflows. 'income' makes it emit inflows
+   * (typical value in the deterministic forecast, triangular sampling in
+   * Monte Carlo): the irregular-income case (freelancers). Direction flows
+   * through event generation, split routing, the optimizer, and Monte Carlo
+   * via isIncomeSource().
+   */
+  direction?: 'income' | 'expense';
+}
+
+/**
+ * Money-in sources: fixed income nodes plus income-direction variable
+ * nodes. Pure; used everywhere the engine must treat a node as income.
+ */
+export function isIncomeSource(node: PlanNode): node is IncomeNode | VariableAmountNode {
+  return node.type === 'income' || (node.type === 'variableAmount' && node.direction === 'income');
 }
 
 export interface PercentageSplitNode extends BaseNode {

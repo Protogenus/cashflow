@@ -133,3 +133,21 @@ Format for each entry:
 - **Decision:** ...
 - **Consequences:** ...
 ```
+
+## 2026-11-03 — Variable-amount nodes gain an income direction
+- **Status:** decided
+- **Context:** The variable-amount node was expense-only (generateEvents hardcoded kind 'expense'), but PRODUCT_SPEC/DESIGN.md specify the freelancer template's "irregular income modeled as variable node". Wiring a variable node as income without engine support would have silently subtracted the income from the balance — wrong numbers presented as a forecast.
+- **Decision:** `VariableAmountNode.direction?: 'income' | 'expense'`, optional, defaulting to 'expense' (every existing graph and test behaves byte-identically). A shared pure guard `isIncomeSource()` (now a type guard) is used everywhere the engine must treat a node as money-in: event generation (kind, incl. skipIncomeOccurrences for missed-paycheck shocks), split allocation claiming, direct income→goal/debt edges, split-preview cards, and Monte Carlo rent designation (income-direction variables are never bills). The Inspector exposes a Money in/out toggle; canvas edges tint green for income-direction sources.
+- **Consequences:** Freelancer template models client income as a true variable inflow (typical in deterministic, triangular-sampled in MC, shockable via missed-paycheck). No schema migration needed — absent `direction` means expense.
+
+## 2026-11-03 — Alert rules evaluate the deterministic forecast, not Monte Carlo
+- **Status:** decided
+- **Context:** Milestone 8's rules ("warn me if projected balance drops under $X") need a single, explainable, instant answer. Running them over Monte Carlo bands would make trigger dates probabilistic and the explanations ("which bills drove it") ambiguous.
+- **Decision:** `evaluateAlerts()` runs one deterministic forecast (honoring the active scenario's disabled-node toggles) and evaluates all enabled rules against it. Severity ordering is critical > warning > info, then earliest firing date. Explanations reuse the shared `findDrivers` analysis so alerts and the forecast panel never disagree about what drove a low point.
+- **Consequences:** Alerts recompute live on every graph/assumptions change (one forecast — cheap). MC-based alerting is a later feature if users ask for it.
+
+## 2026-11-03 — Onboarding completion is a persisted setting; templates replace the canvas
+- **Status:** decided
+- **Context:** First-run onboarding must show once (no saved data → overlay), be skippable, and be re-runnable from Settings. Template loads and the onboarding-built graph replace the whole canvas.
+- **Decision:** `settingsStore.onboardingComplete` gates the overlay; `loadGraph()` on the graph store replaces nodes/edges and resets undo history (cross-graph undo would be surprising — same rule as scenario switches). The scenario mirror persists the loaded graph into the active scenario automatically, so templates work inside scenarios without special-casing. Template loads ask for confirmation only when the canvas is non-empty.
+- **Consequences:** "Reset to template" and "Clear canvas" are safe (confirmed), undoable only within the new graph's own history.

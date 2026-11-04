@@ -18,7 +18,7 @@ export const NODE_META: Record<NodeType, { title: string; blurb: string }> = {
   startingBalance: { title: 'Starting balance', blurb: 'What your account shows today' },
   income: { title: 'Income', blurb: 'Paycheck or other money in, on a schedule' },
   expense: { title: 'Expense', blurb: 'A bill: amount, due date, frequency' },
-  variableAmount: { title: 'Variable bill', blurb: 'Min / typical / max instead of one number' },
+  variableAmount: { title: 'Variable amount', blurb: 'Min / typical / max — a bill or irregular income' },
   percentageSplit: { title: 'Percentage split', blurb: 'Divide money by fixed percentages' },
   prioritySplit: { title: 'Priority split', blurb: 'Fill buckets in priority order' },
   conditional: { title: 'Conditional', blurb: 'Route money on "if balance > X"' },
@@ -114,6 +114,7 @@ export function createNode(type: NodeType, position: { x: number; y: number }): 
     case 'variableAmount':
       return {
         ...base, type, name: label, minCents: 5000, typicalCents: 10000, maxCents: 15000,
+        direction: 'expense',
         recurrence: {
           frequency: { kind: 'monthly', dayOfMonth: parseISODate(today).d },
           businessDay: 'following', exceptions: {},

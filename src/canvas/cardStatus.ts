@@ -41,8 +41,9 @@ export function cardStatus(graph: PlanGraph, node: PlanNode): CardStatus {
     }
     case 'variableAmount': {
       const next = nextOccurrenceDate(node.recurrence, today);
+      const dir = node.direction === 'income' ? 'in' : 'out';
       return {
-        primary: `min ${formatMoney(node.minCents)} · typ ${formatMoney(node.typicalCents)} · max ${formatMoney(node.maxCents)}`,
+        primary: `${dir} · min ${formatMoney(node.minCents)} · typ ${formatMoney(node.typicalCents)} · max ${formatMoney(node.maxCents)}`,
         secondary: next ? `next: ${formatDateShort(next)}` : 'no upcoming dates',
       };
     }

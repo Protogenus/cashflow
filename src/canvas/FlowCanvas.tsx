@@ -23,11 +23,16 @@ import { findOrphanedNodes } from '../engine';
 import { cardStatus } from './cardStatus';
 import { nodeTypes, type CFNodeData } from './nodes';
 import { NODE_META, createNode } from './templates';
-import type { NodeType } from '../engine/types';
+import type { NodeType, PlanNode } from '../engine/types';
 
-function edgeClass(sourceType: NodeType | undefined): string {
-  if (sourceType === 'income') return 'cf-edge-income';
-  if (sourceType === 'expense' || sourceType === 'variableAmount') return 'cf-edge-expense';
+function edgeClass(source: PlanNode | undefined): string {
+  if (!source) return '';
+  // Explicit checks (not the isIncomeSource guard): the guard's false branch
+  // would narrow away 'variableAmount' and break the expense check below.
+  const incomeLike =
+    source.type === 'income' || (source.type === 'variableAmount' && source.direction === 'income');
+  if (incomeLike) return 'cf-edge-income';
+  if (source.type === 'expense' || source.type === 'variableAmount') return 'cf-edge-expense';
   return '';
 }
 
@@ -69,7 +74,7 @@ export function FlowCanvas() {
           target: e.target,
           sourceHandle: e.sourceHandle,
           targetHandle: e.targetHandle,
-          className: edgeClass(src?.type),
+          className: edgeClass(src),
           selected: e.id === selectedEdgeId,
         };
       }),

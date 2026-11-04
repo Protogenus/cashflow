@@ -21,6 +21,7 @@ import {
 } from 'recharts';
 import {
   graphFingerprint,
+  isIncomeSource,
   validateGraph,
   type ISODate,
   type MonteCarloResult,
@@ -160,7 +161,7 @@ function ShockEditor() {
   const setAssumptions = useAssumptionsStore((s) => s.set);
   const nodes = useGraphStore((s) => s.nodes);
   const horizonDays = useAssumptionsStore((s) => s.assumptions.horizonDays);
-  const incomeNodes = useMemo(() => nodes.filter((n) => n.type === 'income'), [nodes]);
+  const incomeNodes = useMemo(() => nodes.filter((n) => isIncomeSource(n)), [nodes]);
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
