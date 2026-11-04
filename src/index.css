@@ -1,0 +1,253 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- DESIGN.md §2 color tokens ---------- */
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #f1efea;
+  --border: #e2ded4;
+  --text: #1c1a15;
+  --text-muted: #6b665a;
+  --income: #2f7d4f;
+  --expense: #b3402e;
+  --accent: #2b5f8a;
+  --warning: #a86a12;
+  --danger: #b3402e;
+  --node-balance: #2b5f8a;
+  --node-logic: #6d5b8e;
+  --node-goal: #2f7d4f;
+  --node-debt: #8a4a2b;
+  --node-variable: #a86a12;
+}
+
+.dark {
+  --bg: #161511;
+  --surface: #1e1d18;
+  --surface-2: #26251f;
+  --border: #3a382e;
+  --text: #ede9dd;
+  --text-muted: #a8a294;
+  --income: #5cb87f;
+  --expense: #e0705a;
+  --accent: #7fa8cc;
+  --warning: #d9a441;
+  --danger: #e0705a;
+  --node-balance: #7fa8cc;
+  --node-logic: #a894c8;
+  --node-goal: #5cb87f;
+  --node-debt: #d08a5a;
+  --node-variable: #d9a441;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.money, .tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- React Flow canvas ---------- */
+.cf-canvas {
+  background: var(--bg);
+}
+.cf-canvas .react-flow__attribution {
+  background: transparent;
+  color: var(--text-muted);
+}
+.cf-canvas .react-flow__minimap {
+  background: var(--surface-2) !important;
+}
+.cf-canvas .react-flow__controls {
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
+}
+.cf-canvas .react-flow__controls-button {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  fill: var(--text);
+}
+.cf-canvas .react-flow__controls-button:hover {
+  background: var(--surface-2);
+}
+.cf-edge-income { stroke: var(--income); }
+.cf-edge-expense { stroke: var(--expense); }
+.cf-canvas .react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+/* ---------- Node cards: shape + color + icon (never color alone) ---------- */
+.cf-node {
+  width: 190px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px 8px 14px;
+  font-size: 12px;
+  color: var(--text);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  position: relative;
+}
+.cf-node.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.cf-node .cf-node-label {
+  font-weight: 600;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+.cf-node .cf-node-status {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.cf-node .cf-node-icon {
+  flex: none;
+  display: inline-flex;
+}
+
+/* shape/color accents per type */
+.cf-node-balance   { border-left: 5px double var(--node-balance); }
+.cf-node-balance .cf-node-icon { color: var(--node-balance); }
+
+.cf-node-income    { border-left: 5px solid var(--income); }
+.cf-node-income .cf-node-icon { color: var(--income); }
+.cf-node-income .cf-edge-chevron {
+  position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-bottom: 10px solid var(--income); /* up chevron = money in */
+}
+
+.cf-node-expense   { border-left: 5px solid var(--expense); }
+.cf-node-expense .cf-node-icon { color: var(--expense); }
+.cf-node-expense .cf-edge-chevron {
+  position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
+  width: 0; height: 0;
+  border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-top: 10px solid var(--expense); /* down chevron = money out */
+}
+
+.cf-node-variable  { border: 1.5px dashed var(--node-variable); }
+.cf-node-variable .cf-node-icon { color: var(--node-variable); }
+
+.cf-node-goal      { border-top: 5px solid var(--node-goal); border-radius: 4px 10px 10px 10px; }
+.cf-node-goal .cf-node-icon { color: var(--node-goal); }
+.cf-node-goal .cf-flag-tab {
+  position: absolute; top: -11px; left: 12px;
+  width: 26px; height: 8px; background: var(--node-goal);
+  border-radius: 2px 2px 0 0;
+}
+
+.cf-node-debt {
+  border: 1.5px solid var(--node-debt);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); /* notched corner */
+  border-radius: 0;
+  padding-right: 20px;
+}
+.cf-node-debt .cf-node-icon { color: var(--node-debt); }
+
+/* diamond + hexagon need transform wrappers so handles stay put */
+.cf-diamond-wrap { width: 190px; height: 120px; position: relative; }
+.cf-diamond {
+  position: absolute; inset: 12px 22px;
+  transform: rotate(45deg);
+  background: var(--surface);
+  border: 1.5px solid var(--node-logic);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+}
+.cf-diamond-content {
+  position: absolute; inset: 12px 22px;
+  display: flex; flex-direction: column; justify-content: center;
+  font-size: 11px; color: var(--text); text-align: center;
+}
+.cf-diamond-content .cf-node-label { justify-content: center; }
+.cf-diamond-content .cf-node-icon { color: var(--node-logic); }
+.cf-diamond-wrap.selected .cf-diamond { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cf-priority-badge {
+  position: absolute; top: 2px; right: 26px; z-index: 2;
+  color: var(--node-logic); background: var(--surface);
+  border: 1px solid var(--node-logic); border-radius: 4px;
+  padding: 0 3px; font-size: 10px; line-height: 1.4;
+}
+
+.cf-hex-wrap { width: 190px; height: 104px; position: relative; }
+.cf-hex-border {
+  position: absolute; inset: 0;
+  background: var(--node-logic);
+  clip-path: polygon(24% 0, 76% 0, 100% 50%, 76% 100%, 24% 100%, 0 50%);
+}
+.cf-hex {
+  position: absolute; inset: 2px;
+  background: var(--surface);
+  clip-path: polygon(24% 0, 76% 0, 100% 50%, 76% 100%, 24% 100%, 0 50%);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  font-size: 11px; color: var(--text); text-align: center; padding: 0 30px;
+}
+.cf-hex .cf-node-icon { color: var(--node-logic); }
+.cf-hex-wrap.selected .cf-hex-border { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.cf-orphan-badge {
+  position: absolute; top: -9px; right: -9px; z-index: 5;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--warning); color: #fff;
+  font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+  cursor: help;
+}
+
+/* ---------- panels / forms ---------- */
+.cf-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.cf-field label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--text-muted); margin-bottom: 2px;
+}
+.cf-field input, .cf-field select {
+  width: 100%; font-size: 13px; color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 8px;
+}
+.cf-field input:focus, .cf-field select:focus {
+  outline: 2px solid var(--accent); outline-offset: 0; border-color: var(--accent);
+}
+.cf-field .cf-error { color: var(--danger); font-size: 11px; margin-top: 2px; }
+.cf-field .cf-hint { color: var(--text-muted); font-size: 11px; margin-top: 2px; }
+
+.cf-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer;
+}
+.cf-btn:hover { background: var(--surface-2); }
+.cf-btn:disabled { opacity: 0.45; cursor: default; }
+.cf-btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cf-btn-primary:hover { filter: brightness(1.08); background: var(--accent); }
+
+.cf-palette-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; text-align: left;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 9px; font-size: 12px; cursor: grab;
+}
+.cf-palette-item:hover { background: var(--surface-2); border-color: var(--accent); }

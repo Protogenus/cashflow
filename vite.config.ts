@@ -6,8 +6,8 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
-    // Engine unit tests only: pure TS, no DOM. UI tests come with later milestones.
+    // Engine unit tests (pure TS, no DOM) + template regression tests.
     environment: 'node',
-    include: ['src/engine/**/*.test.ts'],
+    include: ['src/**/*.test.ts'],
   },
 });
