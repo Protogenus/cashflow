@@ -17,7 +17,7 @@ export const DISCLAIMER =
 export const DISCLAIMER_SHORT =
   'Based on your inputs only — a planning tool, not financial advice. Projections, not guarantees.';
 
-const inputCls = 'w-24 rounded border px-2 py-1 text-xs money';
+const inputCls = 'w-24 rounded-[3px] border px-2 py-1 text-xs money';
 const inputStyle = { borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' };
 
 function Item({ title, children }: { title: string; children: React.ReactNode }) {
@@ -41,7 +41,7 @@ export function AssumptionsPanel() {
     <div className="flex flex-col gap-4 p-4">
       <section aria-label="Disclaimer">
         <div
-          className="rounded-lg border p-3 text-xs leading-relaxed"
+          className="rounded-[3px] border p-3 text-xs leading-relaxed"
           style={{ borderColor: 'var(--warning)', background: 'var(--surface-2)' }}
         >
           <span className="font-semibold">Please note: </span>

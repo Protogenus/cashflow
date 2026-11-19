@@ -57,7 +57,7 @@ export function TemplatePicker({
 
         <ul className="mt-4 flex flex-col gap-2">
           {STARTER_TEMPLATES.map((t) => (
-            <li key={t.id} className="rounded-lg border p-3" style={{ borderColor: 'var(--border)' }}>
+            <li key={t.id} className="rounded-[3px] border p-3" style={{ borderColor: 'var(--border)' }}>
               <div className="flex items-start gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-semibold">{t.title}</div>

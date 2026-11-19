@@ -12,7 +12,7 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 640,
     title: 'Cashflow',
-    backgroundColor: '#F5F0E6',
+    backgroundColor: '#273136',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

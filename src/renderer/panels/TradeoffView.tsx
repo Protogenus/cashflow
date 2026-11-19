@@ -301,7 +301,7 @@ export function TradeoffView() {
               <span style={{ color: 'var(--text-muted)' }}>Seed</span>
               <input
                 type="number"
-                className="w-28 rounded border px-1 py-0.5 text-xs money"
+                className="w-28 rounded-[3px] border px-1 py-0.5 text-xs money"
                 style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                 value={seed}
                 onChange={(e) => setSeed(Math.max(0, Math.floor(Number(e.target.value) || 0)))}

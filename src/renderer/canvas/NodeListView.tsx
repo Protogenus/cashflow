@@ -59,7 +59,7 @@ function FlowChips({ node, edges, nodes }: { node: PlanNode; edges: PlanEdge[]; 
           {outgoing.map((e) => (
             <span
               key={e.id}
-              className="mr-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
+              className="mr-1 inline-flex items-center gap-1 rounded-[3px] border px-2 py-0.5"
               style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
             >
               {labelOf(e.target)}
@@ -81,7 +81,7 @@ function FlowChips({ node, edges, nodes }: { node: PlanNode; edges: PlanEdge[]; 
           {incoming.map((e) => (
             <span
               key={e.id}
-              className="mr-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5"
+              className="mr-1 inline-flex items-center gap-1 rounded-[3px] border px-2 py-0.5"
               style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
             >
               {labelOf(e.source)}
@@ -109,7 +109,7 @@ function ConnectControl({ node, nodes, edges }: { node: PlanNode; nodes: PlanNod
       <label className="flex flex-1 items-center gap-2">
         <span style={{ color: 'var(--text-muted)' }}>Connect to</span>
         <select
-          className="min-w-0 flex-1 rounded border px-1 py-1 text-xs"
+          className="min-w-0 flex-1 rounded-[3px] border px-1 py-1 text-xs"
           style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
           value={target}
           onChange={(e) => setTarget(e.target.value)}
@@ -172,7 +172,7 @@ function NodeCard({ node, graph, expanded, onToggle }: {
           <span className="block truncate text-[13px] font-semibold">
             {node.label}
             {disabled && (
-              <span className="ml-2 rounded border px-1 text-[10px] font-normal" style={{ borderColor: 'var(--warning)', color: 'var(--warning)' }}>
+              <span className="ml-2 rounded-[3px] border px-1 text-[10px] font-normal" style={{ borderColor: 'var(--warning)', color: 'var(--warning)' }}>
                 excluded
               </span>
             )}
@@ -217,7 +217,7 @@ export function NodeListView() {
         <label className="flex flex-1 items-center gap-2 text-xs">
           <span className="font-semibold" style={{ color: 'var(--text-muted)' }}>Add node</span>
           <select
-            className="min-w-0 flex-1 rounded border px-2 py-2 text-[13px]"
+            className="min-w-0 flex-1 rounded-[3px] border px-2 py-2 text-[13px]"
             style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
             value={addType}
             onChange={(e) => setAddType(e.target.value as NodeType)}

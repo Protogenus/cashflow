@@ -36,7 +36,7 @@ function severityStyle(sev: AlertSeverity): React.CSSProperties {
   return {
     color,
     border: `1px solid ${color}`,
-    borderRadius: 999,
+    borderRadius: 3,
     padding: '0 8px',
     fontSize: 11,
     fontWeight: 700,
@@ -85,7 +85,7 @@ function RuleForm({
   const [problems, setProblems] = useState<string[]>([]);
 
   const inputCls =
-    'rounded border px-2 py-1 text-xs money w-full';
+    'rounded-[3px] border px-2 py-1 text-xs money w-full';
   const inputStyle = { borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' };
 
   const setTypeAndDefaults = (t: AlertRuleType) => {

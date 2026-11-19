@@ -242,7 +242,7 @@ function ShockEditor() {
             <span style={{ color: 'var(--text-muted)' }}>Name</span>
             <input
               type="text"
-              className="mt-0.5 w-full rounded border px-1 py-0.5 text-xs"
+              className="mt-0.5 w-full rounded-[3px] border px-1 py-0.5 text-xs"
               style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -252,7 +252,7 @@ function ShockEditor() {
           <label className="text-xs">
             <span style={{ color: 'var(--text-muted)' }}>Kind</span>
             <select
-              className="mt-0.5 w-full rounded border px-1 py-0.5 text-xs"
+              className="mt-0.5 w-full rounded-[3px] border px-1 py-0.5 text-xs"
               style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
               value={kind}
               onChange={(e) => setKind(e.target.value as 'oneTime' | 'missedPaycheck')}
@@ -268,7 +268,7 @@ function ShockEditor() {
                 <input
                   type="number"
                   min={0}
-                  className="mt-0.5 w-full rounded border px-1 py-0.5 text-xs money"
+                  className="mt-0.5 w-full rounded-[3px] border px-1 py-0.5 text-xs money"
                   style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
@@ -280,7 +280,7 @@ function ShockEditor() {
                   type="date"
                   min={today}
                   max={maxDate}
-                  className="mt-0.5 w-full rounded border px-1 py-0.5 text-xs"
+                  className="mt-0.5 w-full rounded-[3px] border px-1 py-0.5 text-xs"
                   style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
@@ -291,7 +291,7 @@ function ShockEditor() {
             <label className="text-xs">
               <span style={{ color: 'var(--text-muted)' }}>Income to skip once</span>
               <select
-                className="mt-0.5 w-full rounded border px-1 py-0.5 text-xs"
+                className="mt-0.5 w-full rounded-[3px] border px-1 py-0.5 text-xs"
                 style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                 value={incomeId}
                 onChange={(e) => setIncomeId(e.target.value)}
@@ -425,7 +425,7 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
           <span style={{ color: 'var(--text-muted)' }}>Seed</span>
           <input
             type="number"
-            className="w-28 rounded border px-1 py-0.5 text-xs money"
+            className="w-28 rounded-[3px] border px-1 py-0.5 text-xs money"
             style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
             value={seed}
             onChange={(e) => setSeed(Math.max(0, Math.floor(Number(e.target.value) || 0)))}
@@ -458,7 +458,7 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
         {progress && (
           <div>
             <div
-              className="h-2 overflow-hidden rounded"
+              className="h-2 overflow-hidden rounded-[3px]"
               style={{ background: 'var(--surface-2)' }}
               role="progressbar"
               aria-valuenow={Math.round((progress.done / progress.total) * 100)}
@@ -467,7 +467,7 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
               aria-label="Simulation progress"
             >
               <div
-                className="h-full rounded"
+                className="h-full rounded-[3px]"
                 style={{
                   width: `${(progress.done / progress.total) * 100}%`,
                   background: 'var(--accent)',
@@ -534,9 +534,9 @@ export function MonteCarloView({ onOpenAssumptions }: { onOpenAssumptions?: () =
                 {result.rentByMonth.map((r) => (
                   <div key={r.month} className="flex items-center gap-2 text-xs">
                     <span className="w-20" style={{ color: 'var(--text-muted)' }}>{r.label}</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded" style={{ background: 'var(--surface-2)' }}>
+                    <div className="h-2 flex-1 overflow-hidden rounded-[3px]" style={{ background: 'var(--surface-2)' }}>
                       <div
-                        className="h-full rounded"
+                        className="h-full rounded-[3px]"
                         style={{
                           width: `${r.probCovered * 100}%`,
                           background: r.probCovered >= 0.95 ? 'var(--income)' : r.probCovered >= 0.8 ? 'var(--warning)' : 'var(--danger)',

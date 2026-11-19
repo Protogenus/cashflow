@@ -129,7 +129,7 @@ export function TimelapseBar() {
                 {eventIndices.map((i) => (
                   <span
                     key={i}
-                    className="absolute top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-full"
+                    className="absolute top-0 h-1.5 w-1.5 -translate-x-1/2 rounded-[3px]"
                     style={{
                       left: `${(i / (frames.length - 1)) * 100}%`,
                       background: 'var(--accent)',
@@ -149,7 +149,7 @@ export function TimelapseBar() {
             <label>
               Window{' '}
               <select
-                className="rounded border px-1 py-0.5 text-xs"
+                className="rounded-[3px] border px-1 py-0.5 text-xs"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
                 value={windowDays}
                 onChange={(e) => setWindowDays(Number(e.target.value))}
@@ -165,7 +165,7 @@ export function TimelapseBar() {
             <label>
               Speed{' '}
               <select
-                className="rounded border px-1 py-0.5 text-xs"
+                className="rounded-[3px] border px-1 py-0.5 text-xs"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
                 value={speed}
                 onChange={(e) => setSpeed(Number(e.target.value))}

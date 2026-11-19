@@ -36,7 +36,7 @@ function nextFriday(): ISODate {
   return formatISODate(d);
 }
 
-const inputCls = 'w-full rounded border px-3 py-2 text-sm money';
+const inputCls = 'w-full rounded-[3px] border px-3 py-2 text-sm money';
 const inputStyle = { borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' };
 
 export function Onboarding() {
@@ -141,7 +141,7 @@ export function Onboarding() {
             {steps.map((label, i) => (
               <div key={label} className="flex-1">
                 <div
-                  className="h-1.5 rounded-full"
+                  className="h-1.5 rounded-[3px]"
                   style={{ background: i <= step ? 'var(--accent)' : 'var(--border)' }}
                 />
                 <div

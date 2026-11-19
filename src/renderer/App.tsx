@@ -53,7 +53,7 @@ function RightPanel({ tab, setTab }: { tab: RightTab; setTab: (t: RightTab) => v
       style={{
         color: tab === id ? 'var(--text)' : 'var(--text-muted)',
         background: tab === id ? 'var(--surface-2)' : 'transparent',
-        borderRadius: '10px',
+        borderRadius: '3px',
       }}
       onClick={() => setTab(id)}
       aria-selected={tab === id}
@@ -159,7 +159,7 @@ function ShortcutsDialog({ onClose }: { onClose: () => void }) {
           {SHORTCUTS.map(([keys, what]) => (
             <div key={keys} className="flex items-center gap-3">
               <dt
-                className="shrink-0 rounded border px-2 py-0.5 font-mono text-xs"
+                className="shrink-0 rounded-[3px] border px-2 py-0.5 font-mono text-xs"
                 style={{ borderColor: 'var(--border)', background: 'var(--surface-2)' }}
               >
                 {keys}
@@ -187,7 +187,7 @@ function Toast() {  const toast = useGraphStore((s) => s.toast);
   if (!toast) return null;
   return (
     <div
-      className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg px-4 py-2 text-sm shadow-lg"
+      className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-[3px] px-4 py-2 text-sm shadow-lg"
       style={{ background: 'var(--text)', color: 'var(--bg)' }}
       role="alert"
     >

@@ -32,7 +32,7 @@ import {
 import { formatDollars, parseDollarsToCents } from '../lib/format';
 import { TemplatePicker } from '../components/TemplatePicker';
 
-const inputCls = 'rounded border px-2 py-1 text-xs money';
+const inputCls = 'rounded-[3px] border px-2 py-1 text-xs money';
 const inputStyle = { borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

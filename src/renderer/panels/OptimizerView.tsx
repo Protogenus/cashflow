@@ -53,7 +53,7 @@ function CandidateCard({
     <div className="cf-panel p-3" style={candidate.rank === 1 ? { borderColor: 'var(--accent)' } : undefined}>
       <div className="flex items-center gap-2">
         <span
-          className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold"
+          className="flex h-6 w-6 items-center justify-center rounded-[3px] text-xs font-bold"
           style={{ background: candidate.rank === 1 ? 'var(--accent)' : 'var(--surface-2)', color: candidate.rank === 1 ? 'var(--on-accent)' : 'var(--text)' }}
         >
           {candidate.rank}
@@ -263,7 +263,7 @@ export function OptimizerView() {
         <label className="flex items-center gap-2 text-xs">
           <span style={{ color: 'var(--text-muted)' }}>Goal</span>
           <select
-            className="rounded border px-1 py-0.5 text-xs"
+            className="rounded-[3px] border px-1 py-0.5 text-xs"
             style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
             value={goalNodeId}
             onChange={(e) => setGoalNodeId(e.target.value)}
@@ -279,7 +279,7 @@ export function OptimizerView() {
         <label className="flex items-center gap-2 text-xs">
           <span style={{ color: 'var(--text-muted)' }}>Debt</span>
           <select
-            className="rounded border px-1 py-0.5 text-xs"
+            className="rounded-[3px] border px-1 py-0.5 text-xs"
             style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
             value={debtNodeId}
             onChange={(e) => setDebtNodeId(e.target.value)}

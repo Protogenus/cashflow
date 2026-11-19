@@ -203,13 +203,13 @@ export function ScenariosPanel() {
                 title={isActive ? 'Active scenario' : 'Switch to this scenario'}
               >
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  className="h-2.5 w-2.5 shrink-0 rounded-[3px]"
                   style={{ background: isActive ? 'var(--accent)' : 'var(--border)' }}
                   aria-hidden="true"
                 />
                 {editingId === scn.id ? (
                   <input
-                    className="min-w-0 flex-1 rounded border px-1 py-0.5 text-xs"
+                    className="min-w-0 flex-1 rounded-[3px] border px-1 py-0.5 text-xs"
                     style={{ borderColor: 'var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
                     value={editName}
                     autoFocus
@@ -228,7 +228,7 @@ export function ScenariosPanel() {
                       {scn.name}
                     </span>
                     {scn.isBaseline && (
-                      <span className="shrink-0 rounded px-1 text-[10px]" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
+                      <span className="shrink-0 rounded-[3px] px-1 text-[10px]" style={{ background: 'var(--surface-2)', color: 'var(--text-muted)' }}>
                         baseline
                       </span>
                     )}
