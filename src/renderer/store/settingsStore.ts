@@ -9,7 +9,6 @@
 import { create } from 'zustand';
 import { DEFAULT_ASSUMPTIONS } from '../engine';
 
-export type ThemeChoice = 'light' | 'dark' | 'system';
 export type ReducedMotionChoice = 'system' | 'reduce' | 'full';
 
 export interface CurrencyOption {
@@ -29,7 +28,6 @@ export const CURRENCY_OPTIONS: CurrencyOption[] = [
 
 export interface SettingsState {
   onboardingComplete: boolean;
-  theme: ThemeChoice;
   horizonDaysDefault: number;
   safetyBufferCentsDefault: number;
   mcTrialsDefault: number;
@@ -47,7 +45,6 @@ export interface SettingsState {
 
 export const DEFAULT_SETTINGS: SettingsState = {
   onboardingComplete: false,
-  theme: 'system',
   horizonDaysDefault: DEFAULT_ASSUMPTIONS.horizonDays,
   safetyBufferCentsDefault: DEFAULT_ASSUMPTIONS.safetyBufferCents,
   mcTrialsDefault: DEFAULT_ASSUMPTIONS.mcTrials,

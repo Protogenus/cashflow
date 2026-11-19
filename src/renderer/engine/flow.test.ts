@@ -182,3 +182,58 @@ describe('flowFrames', () => {
     expect(frames.length).toBeLessThanOrEqual(10);
   });
 });
+
+describe('flowFrames: priority splits and conditionals', () => {
+  function prio(id: string): PlanNode {
+    return {
+      id, type: 'prioritySplit', label: 'Priority', position: { x: 0, y: 0 },
+      outputs: [
+        { id: 'first', label: 'Bills', priority: 1, capCents: 60000 },
+        { id: 'second', label: 'Savings', priority: 2 },
+      ],
+    };
+  }
+
+  function cond(id: string): PlanNode {
+    return {
+      id, type: 'conditional', label: 'If balance', position: { x: 0, y: 0 },
+      predicate: { op: 'gt', thresholdCents: 50000 }, trueLabel: 'Save it', falseLabel: 'Keep it',
+    };
+  }
+
+  it('turns a priority-split payday into capped transfers', () => {
+    const g = graph(
+      [balance('bal', 100000), income('pay', 'Paycheck', 100000, '2026-11-05'), prio('ps'), goal('g', 'Savings')],
+      [edge('e1', 'pay', 'ps'), edge('e2', 'ps', 'g', 'second')],
+    );
+    const frames = flowFrames(g, assumptions(), OPTS);
+    const payday = frames[2];
+    const byLabel = new Map(payday.transfers.map((t) => [t.label, t]));
+    expect(byLabel.get('Paycheck → Priority')?.amountCents).toBe(100000);
+    // First output is capped at $600 with no sink: kept in balance.
+    // Second output (no cap) routes $400 to the goal.
+    const toGoal = byLabel.get('Savings → Savings');
+    expect(toGoal?.amountCents).toBe(40000);
+    expect(toGoal?.edgeIds).toEqual(['e2']);
+    const splitPulse = payday.pulses.find((p) => p.nodeId === 'ps' && p.kind === 'split');
+    expect(splitPulse?.amountCents).toBe(60000);
+    expect(splitPulse?.note).toMatch(/kept in balance/);
+    expect(payday.summary).toMatch(/\$400 → Savings/);
+    expect(payday.summary).toMatch(/\$600 kept in balance/);
+  });
+
+  it('takes the same conditional branch the walk took', () => {
+    const g = graph(
+      [balance('bal', 100000), income('pay', 'Paycheck', 100000, '2026-11-05'), cond('c'), goal('g', 'Savings')],
+      [edge('e1', 'pay', 'c'), edge('e2', 'c', 'g', 'true')],
+    );
+    const frames = flowFrames(g, assumptions(), OPTS);
+    const payday = frames[2];
+    const byLabel = new Map(payday.transfers.map((t) => [t.label, t]));
+    // Balance after the paycheck lands: $2,000 > $500 → true branch.
+    const toGoal = byLabel.get('balance > $500 → Savings');
+    expect(toGoal?.amountCents).toBe(100000);
+    expect(toGoal?.edgeIds).toEqual(['e2']);
+    expect(payday.summary).toMatch(/balance > \$500/);
+  });
+});

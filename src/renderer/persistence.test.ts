@@ -88,14 +88,14 @@ describe('migratePersisted', () => {
       activeScenarioId: 'x',
       assumptions: { horizonDays: 60 },
       rules: [],
-      settings: { theme: 'dark' },
+      settings: { currencySymbol: '€' },
       savedAt: '2026-11-03T00:00:00.000Z',
     };
     const out = migratePersisted(partial);
     expect(out.assumptions.horizonDays).toBe(60);
     expect(out.assumptions.mcTrials).toBe(2000); // default filled
-    expect(out.settings.theme).toBe('dark');
-    expect(out.settings.currencySymbol).toBe('$'); // default filled
+    expect(out.settings.currencySymbol).toBe('€');
+    expect(out.settings.currencyCode).toBe('USD'); // default filled
   });
 
   it('rejects unknown schema versions without guessing', () => {
@@ -141,7 +141,7 @@ describe('collect/apply round-trip', () => {
   it('snapshots live stores and restores them', () => {
     const settings = useSettingsStore.getState();
     const alerts = useAlertsStore.getState();
-    settings.set({ theme: 'dark', currencySymbol: '€', currencyCode: 'EUR' });
+    settings.set({ currencySymbol: '€', currencyCode: 'EUR' });
     alerts.addRule({
       name: 'Test rule',
       type: 'paydayGap',
@@ -151,13 +151,11 @@ describe('collect/apply round-trip', () => {
     });
 
     const snap = collectPersistedState();
-    expect(snap.settings.theme).toBe('dark');
     expect(snap.settings.currencySymbol).toBe('€');
     expect(snap.rules.some((r) => r.name === 'Test rule')).toBe(true);
 
-    settings.set({ theme: 'light', currencySymbol: '$', currencyCode: 'USD' });
+    settings.set({ currencySymbol: '$', currencyCode: 'USD' });
     applyPersistedState(snap);
-    expect(useSettingsStore.getState().theme).toBe('dark');
     expect(useSettingsStore.getState().currencySymbol).toBe('€');
     expect(useAlertsStore.getState().rules.some((r) => r.name === 'Test rule')).toBe(true);
 

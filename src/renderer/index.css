@@ -1,62 +1,10 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 /* ---------- Matcha theme (lucafalasco/matcha) ----------
-   Canonical palette: bg #273136, fg #D1DED3, green #7EB08A, tan #D2B48C,
-   pink #FF819F, mauve #BA8EAF, blue #7EA4B0. Matcha ships dark only, so
-   the light theme below is a derived inversion. Light text colors are
-   darkened variants of the Matcha hexes for WCAG AA; fills/borders keep
-   the raw Matcha hexes where they are not text. */
+   Canonical dark palette: bg #273136, fg #D1DED3, green #7EB08A,
+   tan #D2B48C, pink #FF819F, mauve #BA8EAF, blue #7EA4B0.
+   The app is dark-only — no light theme, no dark-mode toggle. */
 :root {
-  --bg: #d1ded3;            /* pale matcha — light app background */
-  --surface: #e8efe9;       /* lighter sage card surfaces */
-  --surface-2: #cbdacd;     /* deeper sage: hovers, wells */
-  --border: #a9bfae;        /* soft sage dividers */
-  --text: #273136;          /* matcha slate ink */
-  --text-muted: #54665a;
-  --income: #4e7d5b;        /* darkened matcha green — readable on pale sage */
-  --expense: #c24a68;       /* darkened matcha pink — money out */
-  --deposit: #4e7d5b;       /* money in: edges + travelling dots */
-  --withdraw: #ed1c1c;      /* money out: edges + travelling dots — true red */
-  --accent: #d14a6e;        /* darkened matcha pink — highlights */
-  --accent-deep: #a83452;   /* readable pink for text/icons on pale sage */
-  --warning: #8a6d2b;       /* darkened tan — readable on pale sage */
-  --danger: #c24a68;
-  --danger-soft: #f2d3db;
-  --sage: #7eb08a;          /* raw matcha green — dots, fills */
-  --sage-soft: #dce8dd;
-  --amber: #a67c2e;         /* darkened tan */
-  --amber-soft: #efe3cc;
-  --sky: #5e8a99;           /* darkened matcha blue */
-  --sky-soft: #dde8eb;
-  --node-balance: #5e8a99;  /* darkened matcha blue */
-  --node-logic: #96698c;    /* darkened matcha mauve (splits + conditional) */
-  --node-goal: #4e7d5b;     /* darkened matcha green */
-  --node-debt: #d95d00;     /* debt — orange, per spec */
-  --node-expense: #ed1c1c;  /* expense node accent — red, per spec */
-  --node-variable: #8a6d2b; /* darkened tan */
-  --on-accent: #d1ded3;
-  /* dark sidebar (the left node rail) — dark in both themes */
-  --sidebar: #1e2629;
-  --sidebar-2: #2e3b40;     /* active/hover item */
-  --sidebar-ink: #d1ded3;
-  --sidebar-muted: #9ab0a4;
-  /* per-type icon colors tuned for the dark sidebar — raw Matcha hexes */
-  --sb-balance: #7ea4b0;
-  --sb-income: #7eb08a;
-  --sb-expense: #ed1c1c;
-  --sb-logic: #ba8eaf;
-  --sb-goal: #7eb08a;
-  --sb-debt: #ff8a3d;
-  --sb-variable: #d2b48c;
-  --radius-card: 3px;
-  --radius-input: 3px;
-  --shadow-card: 0 1px 3px rgb(39 49 54 / 0.08), 0 4px 14px rgb(39 49 54 / 0.06);
-  --font-display: Georgia, 'Times New Roman', 'Nimbus Roman No9 L', serif;
-}
-
-.dark {
   --bg: #273136;            /* canonical Matcha background */
   --surface: #323f45;
   --surface-2: #3d4c53;
@@ -85,11 +33,28 @@
   --node-expense: #ed1c1c;  /* expense node accent — red, per spec */
   --node-variable: #d2b48c;
   --on-accent: #273136;
+  /* Monte Carlo interval bands — accent pink at descending opacity
+     (50% narrowest = strongest, 90% widest = faintest). */
+  --band-50: rgba(255, 129, 159, 0.28);
+  --band-80: rgba(255, 129, 159, 0.16);
+  --band-90: rgba(255, 129, 159, 0.08);
+  /* dark sidebar (the left node rail) */
   --sidebar: #1e2629;
-  --sidebar-2: #323f45;
+  --sidebar-2: #323f45;     /* active/hover item */
   --sidebar-ink: #d1ded3;
   --sidebar-muted: #9ab0a4;
+  /* per-type icon colors tuned for the dark sidebar — raw Matcha hexes */
+  --sb-balance: #7ea4b0;
+  --sb-income: #7eb08a;
+  --sb-expense: #ed1c1c;
+  --sb-logic: #ba8eaf;
+  --sb-goal: #7eb08a;
+  --sb-debt: #ff8a3d;
+  --sb-variable: #d2b48c;
+  --radius-card: 3px;
+  --radius-input: 3px;
   --shadow-card: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
+  --font-display: Georgia, 'Times New Roman', 'Nimbus Roman No9 L', serif;
 }
 
 html, body, #root {
@@ -739,12 +704,6 @@ html, body {
   border-radius: 3px;
   padding: 4px 6px;
 }
-.cf-tl-note {
-  margin: 10px 0 0;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
 /* Collapsed launch: a docked bar, not a lone button. */
 .cf-tl-launch {
   display: flex;

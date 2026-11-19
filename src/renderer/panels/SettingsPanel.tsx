@@ -27,7 +27,6 @@ import {
   CURRENCY_OPTIONS,
   useSettingsStore,
   type ReducedMotionChoice,
-  type ThemeChoice,
 } from '../store/settingsStore';
 import { formatDollars, parseDollarsToCents } from '../lib/format';
 import { TemplatePicker } from '../components/TemplatePicker';
@@ -139,24 +138,6 @@ export function SettingsPanel() {
   return (
     <div className="flex flex-col gap-5 p-4">
       <Section title="Appearance">
-        <Row
-          title="Theme"
-          blurb="System follows your OS light/dark setting."
-          control={
-            <div className="flex gap-1" role="group" aria-label="Theme">
-              {(['light', 'dark', 'system'] as ThemeChoice[]).map((t) => (
-                <button
-                  key={t}
-                  className={`cf-btn px-3 py-1 text-xs ${settings.theme === t ? 'cf-btn-primary' : ''}`}
-                  aria-pressed={settings.theme === t}
-                  onClick={() => setDefault({ theme: t })}
-                >
-                  {t[0].toUpperCase() + t.slice(1)}
-                </button>
-              ))}
-            </div>
-          }
-        />
         <Row
           title="Motion"
           blurb="Reduce disables edge and chart animation. System follows your OS setting."

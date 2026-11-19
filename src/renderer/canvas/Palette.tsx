@@ -21,7 +21,7 @@ const ORDER: NodeType[] = [
   'debt',
 ];
 
-/** Per-type icon colors tuned for the dark sidebar (readable in both themes). */
+/** Per-type icon colors tuned for the dark sidebar. */
 const TYPE_ICON_COLOR: Record<NodeType, string> = {
   startingBalance: 'var(--sb-balance)',
   income: 'var(--sb-income)',

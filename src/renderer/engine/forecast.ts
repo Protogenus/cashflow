@@ -4,11 +4,15 @@
  * The walk is event-based: income/expense/variableAmount nodes expand their
  * recurrences into dated occurrences; each day applies its events (income
  * before expenses — a visible assumption) to a running balance seeded by the
- * starting-balance node. Logic nodes (splits, conditionals) and goal/debt
- * nodes are validated as part of the graph here; their allocation semantics
- * (optimizer) and payoff projections (debt) build on this walk in later
- * milestones. projectDebtPayoff is already real: a debt node reports an
- * amortized payoff date from its APR and minimum payment.
+ * starting-balance node. Logic nodes route money in the walk: a percentage
+ * split divides each wired income occurrence by percent, a priority split
+ * fills its outputs in priority order up to their caps, and a conditional
+ * sends the whole occurrence down its true or false branch based on the
+ * balance after the income lands. Goal/debt sinks on any routed branch
+ * leave the spendable balance; shares to expense outputs or to nothing stay
+ * (the expense still hits on its own schedule — money is fungible, the
+ * earmark doesn't move cash). projectDebtPayoff is already real: a debt
+ * node reports an amortized payoff date from its APR and minimum payment.
  */
 import { addDays, formatISODate, parseISODate, toLocalDate, todayISO } from './dates';
 import { findDrivers } from './explain';
@@ -193,6 +197,9 @@ export function validateGraph(graph: PlanGraph): GraphValidation {
       }
       case 'goal':
         checkDate(node.targetDate, 'target date');
+        if (node.targetDate < todayISO()) {
+          warnings.push({ nodeId: node.id, message: 'Goal target date is in the past.' });
+        }
         break;
       case 'variableAmount': {
         const f = node.recurrence.frequency;
@@ -217,15 +224,20 @@ export function validateGraph(graph: PlanGraph): GraphValidation {
         }
         break;
       }
-      case 'debt': {
-        if (node.minPaymentCents < 0 || node.balanceCents < 0) {
-          errors.push({ nodeId: node.id, message: 'Debt balance and payment cannot be negative.' });
+      case 'prioritySplit': {
+        for (const o of node.outputs) {
+          if (o.capCents != null && o.capCents < 0) {
+            errors.push({
+              nodeId: node.id,
+              message: `"${node.label}" output "${o.label}" has a negative cap.`,
+            });
+          }
         }
         break;
       }
-      case 'goal': {
-        if (node.targetDate < todayISO()) {
-          warnings.push({ nodeId: node.id, message: 'Goal target date is in the past.' });
+      case 'debt': {
+        if (node.minPaymentCents < 0 || node.balanceCents < 0) {
+          errors.push({ nodeId: node.id, message: 'Debt balance and payment cannot be negative.' });
         }
         break;
       }
@@ -291,7 +303,7 @@ function fnv1a(str: string): string {
 
 // ---------- split allocation semantics ----------
 //
-// A percentageSplit divides each wired income occurrence into its outputs.
+// Every router divides each wired income occurrence into its outputs.
 // Money routed to a goal or debt sink LEAVES the spendable balance walk
 // (it is moved to savings / paid as extra principal — the checking account
 // genuinely drops), while shares routed to expense outputs or to nothing
@@ -300,9 +312,17 @@ function fnv1a(str: string): string {
 // nodes accumulate extra principal payments. Transfers are excluded from
 // driver analysis — they are allocations, not bills.
 //
-// Paths handled in v1: income -> percentageSplit -> (goal|debt), and direct
-// income -> (goal|debt) edges. An income wired into a split is fully handled
-// by that split (first split in node order wins if wired to several).
+// Routers, in the order the walk consults them for one income occurrence:
+//   percentageSplit — divides by percent (SplitAllocation.percent).
+//   prioritySplit   — fills outputs in priority order, each up to its cap
+//                     (null cap = no cap); whatever is left after the last
+//                     output stays in the balance.
+//   conditional     — sends the whole occurrence down its true or false
+//                     branch. The predicate is tested against the balance
+//                     AFTER the triggering income lands.
+// An income wired into several routers is fully handled by the first one
+// that claims it (first in node order within a kind); direct goal/debt
+// edges only apply when no router claims the income.
 
 export interface SinkRoute {
   nodeId: NodeId;
@@ -316,11 +336,32 @@ export interface SplitAllocation {
   outputs: { outputId: string; percent: number; sinks: SinkRoute[] }[];
 }
 
+export interface PriorityAllocation {
+  splitId: NodeId;
+  incomeIds: NodeId[];
+  /** Outputs in priority order (lowest `priority` first). */
+  outputs: { outputId: string; label: string; capCents?: Cents; sinks: SinkRoute[] }[];
+}
+
+export interface ConditionalAllocation {
+  nodeId: NodeId;
+  incomeIds: NodeId[];
+  predicate: { op: 'gt' | 'lt'; thresholdCents: Cents };
+  trueSinks: SinkRoute[];
+  falseSinks: SinkRoute[];
+}
+
 export interface AllocationPlan {
   splits: SplitAllocation[];
-  /** Income node id -> the split allocation that handles its occurrences. */
+  /** Income node id -> the percentage-split allocation that handles its occurrences. */
   routedIncome: Map<NodeId, SplitAllocation>;
-  /** Income node id -> direct goal/debt sinks (only when NOT routed via a split). */
+  prioritySplits: PriorityAllocation[];
+  /** Income node id -> the priority-split allocation that handles its occurrences. */
+  priorityRouted: Map<NodeId, PriorityAllocation>;
+  conditionals: ConditionalAllocation[];
+  /** Income node id -> the conditional allocation that handles its occurrences. */
+  conditionalRouted: Map<NodeId, ConditionalAllocation>;
+  /** Income node id -> direct goal/debt sinks (only when NOT routed via a router). */
   directSinks: Map<NodeId, SinkRoute[]>;
 }
 
@@ -345,33 +386,113 @@ export function divideEqually(amountCents: Cents, parts: number): Cents[] {
   return out;
 }
 
+/**
+ * Fill priority outputs in order: each takes up to its cap (null = no cap),
+ * whatever is left flows to the next output. Shares are clamped to [0,
+ * remaining], so a zero or negative amount routes nothing. The caller keeps
+ * any remainder after the last output in the balance.
+ */
+export function priorityShares(amountCents: Cents, caps: (Cents | null)[]): Cents[] {
+  let remaining = Math.max(0, amountCents);
+  return caps.map((cap) => {
+    const share = cap == null ? remaining : Math.min(remaining, Math.max(0, cap));
+    remaining -= share;
+    return share;
+  });
+}
+
+/** Test a conditional's predicate against a balance (in cents). */
+export function testPredicate(
+  predicate: { op: 'gt' | 'lt'; thresholdCents: Cents },
+  balanceCents: Cents,
+): boolean {
+  return predicate.op === 'gt'
+    ? balanceCents > predicate.thresholdCents
+    : balanceCents < predicate.thresholdCents;
+}
+
+/** Goal/debt sinks wired out of one output handle (or one conditional branch). */
+function sinksFrom(
+  graph: PlanGraph,
+  byId: Map<NodeId, PlanNode>,
+  sourceId: NodeId,
+  sourceHandle: string,
+): SinkRoute[] {
+  const sinks: SinkRoute[] = [];
+  for (const e of graph.edges) {
+    if (e.source !== sourceId || e.sourceHandle !== sourceHandle) continue;
+    const tgt = byId.get(e.target);
+    if (tgt?.type === 'goal') sinks.push({ nodeId: tgt.id, kind: 'goal', name: tgt.name });
+    else if (tgt?.type === 'debt') sinks.push({ nodeId: tgt.id, kind: 'debt', name: tgt.name });
+  }
+  return sinks;
+}
+
+/** Income sources wired into a node (first in edge order, deduplicated). */
+function wiredIncomeIds(
+  graph: PlanGraph,
+  byId: Map<NodeId, PlanNode>,
+  targetId: NodeId,
+): NodeId[] {
+  const incomeIds: NodeId[] = [];
+  for (const e of graph.edges) {
+    if (e.target !== targetId) continue;
+    const src = byId.get(e.source);
+    if (src && isIncomeSource(src) && !incomeIds.includes(src.id)) incomeIds.push(src.id);
+  }
+  return incomeIds;
+}
+
 export function buildAllocationPlan(graph: PlanGraph): AllocationPlan {
   const byId = new Map<NodeId, PlanNode>(graph.nodes.map((n) => [n.id, n]));
   const splits: SplitAllocation[] = [];
   const routedIncome = new Map<NodeId, SplitAllocation>();
+  const prioritySplits: PriorityAllocation[] = [];
+  const priorityRouted = new Map<NodeId, PriorityAllocation>();
+  const conditionals: ConditionalAllocation[] = [];
+  const conditionalRouted = new Map<NodeId, ConditionalAllocation>();
 
   for (const node of graph.nodes) {
-    if (node.type !== 'percentageSplit') continue;
-    const incomeIds: NodeId[] = [];
-    for (const e of graph.edges) {
-      if (e.target !== node.id) continue;
-      const src = byId.get(e.source);
-      if (src && isIncomeSource(src) && !incomeIds.includes(src.id)) incomeIds.push(src.id);
-    }
-    const outputs = node.outputs.map((o) => {
-      const sinks: SinkRoute[] = [];
-      for (const e of graph.edges) {
-        if (e.source !== node.id || e.sourceHandle !== o.id) continue;
-        const tgt = byId.get(e.target);
-        if (tgt?.type === 'goal') sinks.push({ nodeId: tgt.id, kind: 'goal', name: tgt.name });
-        else if (tgt?.type === 'debt') sinks.push({ nodeId: tgt.id, kind: 'debt', name: tgt.name });
+    if (node.type === 'percentageSplit') {
+      const incomeIds = wiredIncomeIds(graph, byId, node.id);
+      const outputs = node.outputs.map((o) => ({
+        outputId: o.id,
+        percent: o.percent,
+        sinks: sinksFrom(graph, byId, node.id, o.id),
+      }));
+      const alloc: SplitAllocation = { splitId: node.id, incomeIds, outputs };
+      splits.push(alloc);
+      for (const iid of incomeIds) {
+        if (!routedIncome.has(iid)) routedIncome.set(iid, alloc); // first split wins
       }
-      return { outputId: o.id, percent: o.percent, sinks };
-    });
-    const alloc: SplitAllocation = { splitId: node.id, incomeIds, outputs };
-    splits.push(alloc);
-    for (const iid of incomeIds) {
-      if (!routedIncome.has(iid)) routedIncome.set(iid, alloc); // first split wins
+    } else if (node.type === 'prioritySplit') {
+      const incomeIds = wiredIncomeIds(graph, byId, node.id);
+      const outputs = [...node.outputs]
+        .sort((a, b) => a.priority - b.priority)
+        .map((o) => ({
+          outputId: o.id,
+          label: o.label,
+          capCents: o.capCents,
+          sinks: sinksFrom(graph, byId, node.id, o.id),
+        }));
+      const alloc: PriorityAllocation = { splitId: node.id, incomeIds, outputs };
+      prioritySplits.push(alloc);
+      for (const iid of incomeIds) {
+        if (!priorityRouted.has(iid)) priorityRouted.set(iid, alloc); // first split wins
+      }
+    } else if (node.type === 'conditional') {
+      const incomeIds = wiredIncomeIds(graph, byId, node.id);
+      const alloc: ConditionalAllocation = {
+        nodeId: node.id,
+        incomeIds,
+        predicate: node.predicate,
+        trueSinks: sinksFrom(graph, byId, node.id, 'true'),
+        falseSinks: sinksFrom(graph, byId, node.id, 'false'),
+      };
+      conditionals.push(alloc);
+      for (const iid of incomeIds) {
+        if (!conditionalRouted.has(iid)) conditionalRouted.set(iid, alloc); // first conditional wins
+      }
     }
   }
 
@@ -379,7 +500,11 @@ export function buildAllocationPlan(graph: PlanGraph): AllocationPlan {
   for (const e of graph.edges) {
     const src = byId.get(e.source);
     const tgt = byId.get(e.target);
-    if (!src || !isIncomeSource(src) || routedIncome.has(src.id)) continue;
+    if (!src || !isIncomeSource(src)) continue;
+    // A router claims the income outright — direct edges never also apply.
+    if (routedIncome.has(src.id) || priorityRouted.has(src.id) || conditionalRouted.has(src.id)) {
+      continue;
+    }
     if (tgt?.type === 'goal' || tgt?.type === 'debt') {
       const list = directSinks.get(src.id) ?? [];
       list.push({ nodeId: tgt.id, kind: tgt.type, name: tgt.name });
@@ -387,7 +512,7 @@ export function buildAllocationPlan(graph: PlanGraph): AllocationPlan {
     }
   }
 
-  return { splits, routedIncome, directSinks };
+  return { splits, routedIncome, prioritySplits, priorityRouted, conditionals, conditionalRouted, directSinks };
 }
 
 /** Fingerprint tying a result to the exact graph + assumptions (+ scenario toggles). */
@@ -583,25 +708,47 @@ export function forecast(
         amountCents: signed,
         kind: ev.kind,
       });
-      // Split-routed income: divide into outputs; goal/debt shares leave the walk.
+      // Routed income: the first router that claims it handles the whole
+      // occurrence — percentage split, then priority split, then
+      // conditional, then direct goal/debt edges. Goal/debt shares leave
+      // the walk (negative transfer events); the rest stays spendable.
       if (ev.kind === 'income') {
+        const applyTransfers = (transfers: LedgerEvent[]) => {
+          for (const t of transfers) {
+            balance += t.amountCents; // negative: money moved out of the spendable balance
+            ledgerEvents.push(t);
+          }
+        };
         const routed = plan.routedIncome.get(ev.nodeId);
         if (routed) {
           const shares = splitShares(ev.amountCents, routed.outputs.map((o) => o.percent));
           routed.outputs.forEach((o, i) => {
-            const transfers = applyToSinks(o.sinks, shares[i], date);
-            for (const t of transfers) {
-              balance += t.amountCents; // negative: money moved out of the spendable balance
-              ledgerEvents.push(t);
-            }
+            applyTransfers(applyToSinks(o.sinks, shares[i], date));
           });
         } else {
-          const sinks = plan.directSinks.get(ev.nodeId);
-          if (sinks && sinks.length > 0) {
-            const transfers = applyToSinks(sinks, ev.amountCents, date);
-            for (const t of transfers) {
-              balance += t.amountCents;
-              ledgerEvents.push(t);
+          const prio = plan.priorityRouted.get(ev.nodeId);
+          if (prio) {
+            const shares = priorityShares(
+              ev.amountCents,
+              prio.outputs.map((o) => o.capCents ?? null),
+            );
+            prio.outputs.forEach((o, i) => {
+              applyTransfers(applyToSinks(o.sinks, shares[i], date));
+            });
+          } else {
+            const cond = plan.conditionalRouted.get(ev.nodeId);
+            if (cond) {
+              // The predicate sees the balance AFTER this income lands —
+              // `balance` already includes it (added above).
+              const passes = testPredicate(cond.predicate, balance);
+              applyTransfers(
+                applyToSinks(passes ? cond.trueSinks : cond.falseSinks, ev.amountCents, date),
+              );
+            } else {
+              const sinks = plan.directSinks.get(ev.nodeId);
+              if (sinks && sinks.length > 0) {
+                applyTransfers(applyToSinks(sinks, ev.amountCents, date));
+              }
             }
           }
         }

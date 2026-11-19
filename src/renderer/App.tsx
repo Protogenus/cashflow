@@ -1,7 +1,7 @@
 /**
  * App.tsx — shell: header (undo/redo, validation badge, templates), palette,
  * canvas, right-panel tabs. Milestone 10 owns boot hydration, the debounced
- * autosave, theme, and reduced-motion.
+ * autosave and reduced-motion.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ReactFlowProvider } from '@xyflow/react';
@@ -202,7 +202,6 @@ export function App() {
   const pastLen = useGraphStore((s) => s.past.length);
   const futureLen = useGraphStore((s) => s.future.length);
   const onboardingComplete = useSettingsStore((s) => s.onboardingComplete);
-  const theme = useSettingsStore((s) => s.theme);
   const reducedMotion = useSettingsStore((s) => s.reducedMotion);
   // Subscribe so every panel re-renders when the currency symbol changes.
   useSettingsStore((s) => s.currencySymbol);
@@ -215,18 +214,6 @@ export function App() {
   const setSettings = useSettingsStore((s) => s.set);
   const [mobileSection, setMobileSection] = useState<'plan' | 'results'>('plan');
   const [showShortcuts, setShowShortcuts] = useState(false);
-
-  // Theme: light / dark / system (follows the OS setting).
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => {
-      const dark = theme === 'dark' || (theme === 'system' && mq.matches);
-      document.documentElement.classList.toggle('dark', dark);
-    };
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, [theme]);
 
   // Reduced motion: reduce / full / system (follows the OS setting).
   useEffect(() => {

@@ -8,14 +8,17 @@
  * watched — and troubleshot — day by day.
  *
  * Faithfulness rule: frames are derived from the same walk the forecast
- * chart uses (forecast() + buildAllocationPlan()). Anything the walk doesn't
- * route (priority splits, conditionals — see the UI note) doesn't appear.
+ * chart uses (forecast() + buildAllocationPlan()). Every router the walk
+ * handles — percentage splits, priority splits, conditionals — appears
+ * here with the same amounts and the same branch choices.
  */
 import {
   buildAllocationPlan,
   divideEqually,
   forecast,
+  priorityShares,
   splitShares,
+  testPredicate,
   validateGraph,
   type AllocationPlan,
 } from './forecast';
@@ -23,6 +26,7 @@ import type {
   Assumptions,
   Cents,
   ISODate,
+  LedgerDay,
   LedgerEvent,
   NodeId,
   PlanEdge,
@@ -98,6 +102,24 @@ function edgesFrom(
   );
 }
 
+/**
+ * Balance right after one ledger event lands, before its routing: the
+ * previous day's end-of-day balance plus this day's ledger events up to
+ * and including this one. Ledger events are in walk order (transfers
+ * included), so this matches the forecast walk exactly — a conditional
+ * tested here takes the same branch the walk took.
+ */
+function balanceAfterEvent(ledger: LedgerDay[], dayIdx: number, eventIdx: number): Cents {
+  const day = ledger[dayIdx];
+  const prevBalance =
+    dayIdx === 0
+      ? day.balanceCents - day.events.reduce((s, e) => s + e.amountCents, 0)
+      : ledger[dayIdx - 1].balanceCents;
+  let b = prevBalance;
+  for (let i = 0; i <= eventIdx; i++) b += day.events[i].amountCents;
+  return b;
+}
+
 /** Split an income occurrence into visual transfers, mirroring the walk. */
 function routeIncome(
   graph: PlanGraph,
@@ -105,6 +127,8 @@ function routeIncome(
   incomeId: NodeId,
   amountCents: Cents,
   byName: Map<NodeId, string>,
+  /** Balance after this income lands — the conditional predicate reads it. */
+  balanceAfterIncome: Cents,
 ): { transfers: FlowTransfer[]; pulses: FlowPulse[]; bits: string[] } {
   const transfers: FlowTransfer[] = [];
   const pulses: FlowPulse[] = [];
@@ -112,6 +136,8 @@ function routeIncome(
   const incomeName = byName.get(incomeId) ?? 'Income';
 
   const routed = plan.routedIncome.get(incomeId);
+  const prio = routed ? undefined : plan.priorityRouted.get(incomeId);
+  const cond = routed || prio ? undefined : plan.conditionalRouted.get(incomeId);
   if (routed) {
     const splitName = byName.get(routed.splitId) ?? 'Split';
     transfers.push({
@@ -159,6 +185,95 @@ function routeIncome(
       bits.push(`${money(kept)} kept in balance`);
     }
     bits.unshift(`${incomeName} ${money(amountCents)} → ${splitName}`);
+  } else if (prio) {
+    const splitName = byName.get(prio.splitId) ?? 'Split';
+    transfers.push({
+      fromId: incomeId,
+      toId: prio.splitId,
+      edgeIds: edgesFrom(graph.edges, incomeId, prio.splitId).map((e) => e.id),
+      amountCents,
+      label: `${incomeName} → ${splitName}`,
+    });
+    const shares = priorityShares(
+      amountCents,
+      prio.outputs.map((o) => o.capCents ?? null),
+    );
+    let kept = 0;
+    prio.outputs.forEach((o, i) => {
+      const share = shares[i];
+      if (share <= 0) return;
+      if (o.sinks.length === 0) {
+        kept += share; // unconnected output: the walk leaves it in the balance
+        return;
+      }
+      const perSink = divideEqually(share, o.sinks.length);
+      o.sinks.forEach((sink, j) => {
+        const amt = perSink[j];
+        const edgeIds = edgesFrom(graph.edges, prio.splitId, sink.nodeId, o.outputId).map(
+          (e) => e.id,
+        );
+        transfers.push({
+          fromId: prio.splitId,
+          toId: sink.nodeId,
+          edgeIds,
+          amountCents: amt,
+          label: `${o.label} → ${sink.name}`,
+        });
+        bits.push(
+          `${o.capCents != null ? `up to ${money(o.capCents)}: ` : ''}${money(amt)} → ${sink.name}`,
+        );
+      });
+    });
+    if (kept > 0) {
+      pulses.push({
+        nodeId: prio.splitId,
+        amountCents: kept,
+        kind: 'split',
+        note: `${money(kept)} kept in balance`,
+      });
+      bits.push(`${money(kept)} kept in balance`);
+    }
+    bits.unshift(`${incomeName} ${money(amountCents)} → ${splitName}`);
+  } else if (cond) {
+    const condName = byName.get(cond.nodeId) ?? 'Conditional';
+    const opLabel = cond.predicate.op === 'gt' ? '>' : '<';
+    const condLabel = `balance ${opLabel} ${money(cond.predicate.thresholdCents)}`;
+    transfers.push({
+      fromId: incomeId,
+      toId: cond.nodeId,
+      edgeIds: edgesFrom(graph.edges, incomeId, cond.nodeId).map((e) => e.id),
+      amountCents,
+      label: `${incomeName} → ${condName}`,
+    });
+    const passes = testPredicate(cond.predicate, balanceAfterIncome);
+    const sinks = passes ? cond.trueSinks : cond.falseSinks;
+    const branchHandle = passes ? 'true' : 'false';
+    if (sinks.length === 0) {
+      pulses.push({
+        nodeId: cond.nodeId,
+        amountCents,
+        kind: 'split',
+        note: `${money(amountCents)} kept in balance`,
+      });
+      bits.push(`${money(amountCents)} kept in balance`);
+    } else {
+      const perSink = divideEqually(amountCents, sinks.length);
+      sinks.forEach((sink, j) => {
+        const amt = perSink[j];
+        const edgeIds = edgesFrom(graph.edges, cond.nodeId, sink.nodeId, branchHandle).map(
+          (e) => e.id,
+        );
+        transfers.push({
+          fromId: cond.nodeId,
+          toId: sink.nodeId,
+          edgeIds,
+          amountCents: amt,
+          label: `${condLabel} → ${sink.name}`,
+        });
+        bits.push(`${money(amt)} → ${sink.name}`);
+      });
+    }
+    bits.unshift(`${incomeName} ${money(amountCents)} → ${condName} (${condLabel})`);
   } else {
     const sinks = plan.directSinks.get(incomeId) ?? [];
     if (sinks.length > 0) {
@@ -220,10 +335,18 @@ export function flowFrames(
     const transfers: FlowTransfer[] = [];
     const bits: string[] = [];
 
-    for (const ev of day.events as LedgerEvent[]) {
+    for (let evIdx = 0; evIdx < day.events.length; evIdx++) {
+      const ev = day.events[evIdx] as LedgerEvent;
       if (ev.kind === 'income') {
         pulses.push({ nodeId: ev.nodeId, amountCents: ev.amountCents, kind: 'income' });
-        const r = routeIncome(active, plan, ev.nodeId, ev.amountCents, byName);
+        const r = routeIncome(
+          active,
+          plan,
+          ev.nodeId,
+          ev.amountCents,
+          byName,
+          balanceAfterEvent(res.ledger, d, evIdx),
+        );
         transfers.push(...r.transfers);
         pulses.push(...r.pulses);
         bits.push(...r.bits);

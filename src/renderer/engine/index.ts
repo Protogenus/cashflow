@@ -36,6 +36,8 @@ export {
   forecastScenario,
   buildAllocationPlan,
   splitShares,
+  priorityShares,
+  testPredicate,
   graphFingerprint,
   type ConnectionCheck,
   type DebtPayoff,
@@ -46,6 +48,8 @@ export {
   type GraphValidation,
   type SplitPreviewOutput,
   type SplitAllocation,
+  type PriorityAllocation,
+  type ConditionalAllocation,
   type AllocationPlan,
   type SinkRoute,
 } from './forecast';

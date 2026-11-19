@@ -5,10 +5,21 @@
  * error with a helpful message — never a crash, a blank screen, or a
  * silently wrong result.
  */
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_ASSUMPTIONS, forecast, validateGraph } from './index';
 import type { ISODate, PlanGraph, PlanNode } from './index';
 import { todayISO } from './dates';
+
+// The forecast window starts at real "today", and the extreme-values case
+// depends on where today falls in the month (a $1 expense must land before
+// the next $999,999,999 payday). Pin the clock so the suite never rots.
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-03T12:00:00'));
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function bal(balanceCents: number, asOf: string = todayISO()): PlanNode {
   return {

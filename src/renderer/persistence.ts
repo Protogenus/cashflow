@@ -116,13 +116,16 @@ export function migratePersisted(data: unknown): PersistedState {
   if (!s.assumptions || typeof s.assumptions !== 'object') throw new Error('Saved data has no assumptions.');
   if (!Array.isArray(s.rules)) throw new Error('Saved data has no alert rules.');
   if (!s.settings || typeof s.settings !== 'object') throw new Error('Saved data has no settings.');
+  // Old saves carry a `theme` key (removed when the app went dark-only);
+  // drop it so it never lands back in the store.
+  const { theme: _staleTheme, ...storedSettings } = s.settings as SettingsState & { theme?: unknown };
   return {
     schemaVersion: SCHEMA_VERSION,
     scenarios: s.scenarios as Scenario[],
     activeScenarioId: s.activeScenarioId,
     assumptions: { ...structuredClone(DEFAULT_ASSUMPTIONS), ...(s.assumptions as Assumptions) },
     rules: s.rules as AlertRule[],
-    settings: { ...structuredClone(DEFAULT_SETTINGS), ...(s.settings as SettingsState) },
+    settings: { ...structuredClone(DEFAULT_SETTINGS), ...storedSettings },
     savedAt: typeof s.savedAt === 'string' ? s.savedAt : new Date().toISOString(),
   };
 }
@@ -272,7 +275,6 @@ export function collectPersistedState(): PersistedState {
     rules: structuredClone(useAlertsStore.getState().rules),
     settings: {
       onboardingComplete: settings.onboardingComplete,
-      theme: settings.theme,
       horizonDaysDefault: settings.horizonDaysDefault,
       safetyBufferCentsDefault: settings.safetyBufferCentsDefault,
       mcTrialsDefault: settings.mcTrialsDefault,

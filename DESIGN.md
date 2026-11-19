@@ -14,57 +14,51 @@
 
 ---
 
-## 2. Color tokens (CSS variables, light + dark, WCAG AA)
+## 2. Color tokens (CSS variables, dark-only, WCAG AA)
 
-All text/background pairings target **WCAG AA (4.5:1 normal text, 3:1 large text)**. Uncertainty bands use low-saturation fills so the median line stays dominant.
+The theme is [Matcha](https://github.com/lucafalasco/matcha) (dark-only) — one theme, no light/dark toggle. All text/background pairings target **WCAG AA (4.5:1 normal text, 3:1 large text)**. Uncertainty bands use low-opacity fills so the median line stays dominant.
 
 ```css
-/* Light theme */
---bg:            #FAFAF8;  /* warm paper white */
---surface:       #FFFFFF;
---surface-2:     #F1EFEA;  /* inset panels */
---border:        #E2DED4;
---text:          #1C1A15;  /* near-black, warm */
---text-muted:    #6B665A;  /* 4.6:1 on --bg */
---income:        #2C7449;  /* money in — deep green (darkened 2026-11-04 for AA on --surface-2) */
---expense:       #B3402E;  /* money out — brick red */
---accent:        #2B5F8A;  /* interactive blue-slate */
---warning:       #96600F;  /* amber-brown for pinch/attention (darkened 2026-11-04: was 4.24:1, now 5.05:1) */
---danger:        #B3402E;  /* same as expense: below-$0 */
---band-50:       rgba(43,95,138,.28);  /* 50% interval fill */
---band-80:       rgba(43,95,138,.16);  /* 80% interval fill */
---band-90:       rgba(43,95,138,.08);  /* 90% interval fill */
---on-accent:     #FFFFFF;  /* text on --accent fills (2026-11-04) */
---node-balance:  #2B5F8A;
---node-logic:    #6D5B8E;  /* splits/conditionals — muted violet */
---node-goal:     #2F7D4F;  /* goals/debt-payoff — green family */
---node-debt:     #8A4A2B;  /* debt — rust */
---node-variable: #96600F;  /* variable amounts — amber family */
-
-/* Dark theme */
---bg:            #161511;
---surface:       #1E1D18;
---surface-2:     #26251F;
---border:        #3A382E;
---text:          #EDE9DD;
---text-muted:    #A8A294;  /* 4.6:1 on --bg */
---income:        #5CB87F;
---expense:       #E0705A;
---accent:        #7FA8CC;
---warning:       #D9A441;
---danger:        #E0705A;
---band-50:       rgba(127,168,204,.30);
---band-80:       rgba(127,168,204,.17);
---band-90:       rgba(127,168,204,.09);
---on-accent:     #161511;  /* text on --accent fills: #fff was 2.51:1 in dark (2026-11-04) */
---node-balance:  #7FA8CC;
---node-logic:    #A894C8;
---node-goal:     #5CB87F;
---node-debt:     #D08A5A;
---node-variable: #D9A441;
+/* Matcha — the whole token set lives in src/renderer/index.css :root */
+--bg:            #273136;  /* canonical Matcha background */
+--surface:       #323F45;  /* card surfaces */
+--surface-2:     #3D4C53;  /* hovers, wells */
+--border:        #4A5E65;
+--text:          #D1DED3;  /* canonical Matcha foreground */
+--text-muted:    #9AB0A4;
+--income:        #7EB08A;  /* money in — raw matcha green */
+--expense:       #FF819F;  /* money out — raw matcha pink */
+--deposit:       #7EB08A;  /* money in: edges + travelling dots */
+--withdraw:      #ED1C1C;  /* money out: edges + travelling dots — true red */
+--accent:        #FF819F;  /* highlights, median line, selection */
+--accent-deep:   #FF819F;
+--warning:       #D2B48C;  /* raw matcha tan — pinch/attention */
+--danger:        #FF819F;  /* below-$0 regions */
+--danger-soft:   #4A2C35;
+--sage:          #7EB08A;
+--sage-soft:     #2C3D33;
+--amber:         #D2B48C;
+--amber-soft:    #3D362A;
+--sky:           #7EA4B0;  /* raw matcha blue */
+--sky-soft:      #26383E;
+--band-50:       rgba(255,129,159,.28);  /* 50% interval fill */
+--band-80:       rgba(255,129,159,.16);  /* 80% interval fill */
+--band-90:       rgba(255,129,159,.08);  /* 90% interval fill */
+--on-accent:     #273136;  /* text on --accent fills */
+--node-balance:  #7EA4B0;
+--node-logic:    #BA8EAF;  /* splits/conditionals — raw matcha mauve */
+--node-goal:     #7EB08A;
+--node-debt:     #FF8A3D;  /* debt — orange, per spec */
+--node-expense:  #ED1C1C;  /* expense node accent — red, per spec */
+--node-variable: #D2B48C;  /* variable amounts — raw matcha tan */
+/* Sidebar (dark rail) icon colors are the raw Matcha hexes in --sb-* */
+--sidebar:       #1E2629;
+--sidebar-2:     #323F45;
+--sidebar-ink:   #D1DED3;
+--sidebar-muted: #9AB0A4;
 ```
 
-Rules: income is always green-family, expense always red-family, across both themes — money direction must never depend on theme memory. Below-$0 regions on charts use the danger color; pinch-point markers use warning. Chart gridlines use `--border`; never pure black/white text (warm-tinted).
+Rules: money direction is never color alone — deposits are green, withdrawals true red (`#ED1C1C`), in dots, edges, and chips alike. Below-$0 regions on charts use the danger color; pinch-point markers use warning. Chart gridlines use `--border`; never pure black/white text. All border radii are 3px, including pills and circles.
 
 ---
 
@@ -74,7 +68,7 @@ Rules: income is always green-family, expense always red-family, across both the
 
 **Display/numbers:** one tabular-numeral treatment — `font-variant-numeric: tabular-nums` on all money figures so columns and ledger rows align. Headline numbers (pinch point, success share) may use a slightly larger weight (600) but stay in the system stack.
 
-**Display font decision:** no custom display font in v1. A distinctive font buys brand at the cost of load time, licensing review, and a less "serious money" feel; the product differentiates on the canvas and the explanations, not on typography. Revisit only if marketing pages need a voice.
+**Display font:** Georgia serif (`--font-display`) for headings, greetings, and big numbers; system stack for the working UI. No webfont dependency — the serif is a system font, so it costs no load time.
 
 **Scale:** 12px micro-labels (node cards, chart axes), 14px base, 16–20px panel titles, 28–32px headline metrics. Line-height 1.5 for prose (assumptions, disclaimers, explanations).
 
@@ -82,21 +76,25 @@ Rules: income is always green-family, expense always red-family, across both the
 
 ## 4. Node visual language
 
-Every node type is visually distinct by **shape + color + icon** (redundant encoding — never color alone, for colorblind safety). Node cards show live computed values as status overlays ("next: Nov 15 · $2,140") per RESEARCH.md §3.
+Every node is the **same rectangular card** with a 5px solid left-border accent in the type's colour, plus a distinct Lucide icon (redundant encoding — never color alone, for colorblind safety). The per-type shapes of the original design (chevrons, flag tab, debt notch, dashed variable border, double balance border, diamond splits, hexagon conditional) were removed 2026-11-19 in favour of one style. Node cards show live computed values as labelled stat rows (label left, value right, hairline between rows), never a run-on paragraph.
 
-| Node type | Shape | Color token | Icon | Card shows |
-|---|---|---|---|---|
-| Starting balance | Rounded rect, double left border | `--node-balance` | Wallet / banknote | Balance + as-of date |
-| Income | Rounded rect, **up-arrow chevron** on left edge | `--income` | Arrow-down-into-tray (↓ in) | Amount, frequency ("$2,140 · biweekly · 26/yr") |
-| Expense | Rounded rect, **down-arrow chevron** on left edge | `--expense` | Arrow-up-out-of-tray (↑ out) | Amount, next due date |
-| Variable amount | Rounded rect, **dashed border** (range = uncertainty) | `--node-variable` | Tilde / wave (~) | "min $80 · typ $140 · max $220" |
-| Percentage split | **Diamond** (decision-like) | `--node-logic` | Pie-slice | Output percentages, live split amounts |
-| Priority split | **Diamond**, stacked-lines badge | `--node-logic` | Stacked bars | Priority order, caps |
-| Conditional | **Hexagon** | `--node-logic` | Branch / fork | "if balance > $500", live true/false state |
-| Goal / savings | Rounded rect, **flag tab** on top edge | `--node-goal` | Flag / target | Target, projected hit date or shortfall |
-| Debt | Rounded rect, **notched corner** | `--node-debt` | Chain-link / card | Balance, APR, payoff date |
+| Node type | Left-border accent | Icon (Lucide) | Card shows |
+|---|---|---|---|
+| Starting balance | `--node-balance` (blue) | circle-dollar-sign | Balance + as-of date |
+| Income | `--income` (green) | banknote-check | Amount, frequency, next payday |
+| Expense | `--node-expense` (red `#ED1C1C`) | banknote-arrow-down | Amount, frequency, due date |
+| Variable amount | `--node-variable` (tan) | trending-up-down | Direction, min / typical / max, next |
+| Percentage split | `--node-logic` (mauve) | square-percent | One row per output: percent · live amount |
+| Priority split | `--node-logic` (mauve) | star-plus | Priority order, caps ("Up to $X" / "No cap") |
+| Conditional | `--node-logic` (mauve) | scroll-text | "If balance > $X", true/false labels |
+| Goal / savings | `--node-goal` (green) | goal | Target, by date |
+| Debt | `--node-debt` (orange) | banknote-x | Balance owed, APR, payoff date |
 
-Edges: curved (bezier), subtle animation only while a simulation is running; income edges tinted green-family, expense edges red-family, logic edges neutral slate. Selected edge shows amount flowing. Invalid drop targets highlight red with the rejection reason as a tooltip ("would create a cycle").
+**Routing in the forecast:** all three routers move money. A percentage split divides each wired income occurrence by percent; a priority split fills its outputs in priority order up to their caps; a conditional sends the whole occurrence down its true or false branch (predicate tested against the balance after the income lands). Goal/debt sinks on any routed branch leave the spendable balance; shares to expense outputs or to nothing stay spendable, and the expense still hits on its own schedule. An income wired into several routers is handled by the first that claims it (percentage, then priority, then conditional; first in node order within a kind). Direct income → goal/debt edges apply only when no router claims the income.
+
+**Flow chips:** during Timelapse playback, each node that moves money shows chips hanging below its bottom border, in rows of 3–4. A chip shows only the charge name; hovering it pops the amount up in a bubble above the chip. Chip borders follow money direction (green deposit, red withdrawal).
+
+Edges: curved (bezier), subtle animation only while a simulation is running; deposit edges green, withdrawal edges true red, logic edges mauve. A flowing edge keeps its direction colour and only gets thicker — it never turns accent pink. Selected edge shows amount flowing. Invalid drop targets highlight red with the rejection reason as a tooltip ("would create a cycle").
 
 **Validation surfacing:** field errors inline in the inspector; a validation count badge sits next to the "Run forecast" button; clicking it navigates to the offending node/field (RESEARCH.md §3).
 
@@ -114,7 +112,7 @@ Edges: curved (bezier), subtle animation only while a simulation is running; inc
 
 ## 6. Empty states
 
-- **First launch (no graph):** canvas shows a calm empty state — dotted grid, a centered card: "Build your first money plan," three template buttons, and "start from scratch." No dead ends, no demo data pre-loaded (nothing fictional in the app — the templates are clearly labeled starting points the user edits, not pretend finances).
+- **First launch:** the app seeds a starter graph (bi-weekly paycheck, rent, electric, starting balance) so the canvas is never empty — the user edits real numbers from the first minute. The onboarding overlay offers the three starter templates or a blank canvas instead; templates are clearly labeled starting points, not pretend finances.
 - **No forecast yet:** results panel shows a ghost outline of the fan chart with "Run your first forecast" — teaches where output will appear.
 - **Optimizer with no split nodes:** "Add a percentage-split node to let the optimizer explore allocations" with a one-click "add split node" action.
 - **Monte Carlo with no variable nodes or shocks:** still runs (deterministic bands collapse), but shows a nudge: "Add a min/typical/max range or a shock event to see uncertainty."

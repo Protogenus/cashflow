@@ -70,8 +70,8 @@ function variable(
   };
 }
 
-function edge(id: string, source: string, target: string): PlanEdge {
-  return { id, source, sourceHandle: 'out', target, targetHandle: 'in' };
+function edge(id: string, source: string, target: string, sourceHandle = 'out'): PlanEdge {
+  return { id, source, sourceHandle, target, targetHandle: 'in' };
 }
 
 function graph(nodes: PlanNode[], edges: PlanEdge[] = []): PlanGraph {
@@ -376,5 +376,171 @@ describe('projectDebtPayoff', () => {
       payoffDate: '2026-11-03', months: 0, totalInterestCents: 0,
     });
     expect(projectDebtPayoff(debt({ minPaymentCents: 0 }), '2026-11-03')).toBeNull();
+  });
+});
+
+describe('forecast: priority splits move money', () => {
+  const prio = (id: string, outputs: { id: string; label: string; priority: number; capCents?: number }[]): PlanNode => ({
+    id, type: 'prioritySplit', label: 'Priority', position: { x: 0, y: 0 }, outputs,
+  });
+  const goal = (id: string, name: string): PlanNode => ({
+    id, type: 'goal', label: name, position: { x: 0, y: 0 }, name,
+    targetCents: 100000, targetDate: '2027-06-01',
+  });
+  const once = { kind: 'once', date: '2026-11-05' } as const;
+
+  it('fills outputs in priority order up to their caps; the rest flows on', () => {
+    const g = graph([
+      balance('bal', 100000),
+      income('pay', 'Paycheck', 100000, once),
+      // Array order is deliberately backwards — priority, not position, decides.
+      prio('ps', [
+        { id: 'second', label: 'Savings', priority: 2 },
+        { id: 'first', label: 'Bills', priority: 1, capCents: 60000 },
+      ]),
+      expense('rent', 'Rent', 60000, { kind: 'once', date: '2026-11-06' }),
+      goal('save', 'Savings'),
+    ], [
+      edge('e1', 'pay', 'ps'),
+      edge('e2', 'ps', 'rent', 'first'),
+      edge('e3', 'ps', 'save', 'second'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    // Nov 5: +$1,000 income; $600 stays for Bills, $400 → Savings goal.
+    expect(day(r.ledger, '2026-11-05').balanceCents).toBe(160000);
+    expect(r.goals.find((x) => x.nodeId === 'save')?.savedCents).toBe(40000);
+    // Nov 6: the $600 rent still hits on its own schedule.
+    expect(day(r.ledger, '2026-11-06').balanceCents).toBe(100000);
+  });
+
+  it('sends everything to the first output when the income fits under its cap', () => {
+    const g = graph([
+      balance('bal', 100000),
+      income('pay', 'Paycheck', 20000, once),
+      prio('ps', [
+        { id: 'first', label: 'Save', priority: 1, capCents: 30000 },
+        { id: 'second', label: 'Fun', priority: 2 },
+      ]),
+      goal('a', 'Save'),
+      goal('b', 'Fun'),
+    ], [
+      edge('e1', 'pay', 'ps'),
+      edge('e2', 'ps', 'a', 'first'),
+      edge('e3', 'ps', 'b', 'second'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    expect(r.goals.find((x) => x.nodeId === 'a')?.savedCents).toBe(20000);
+    expect(r.goals.find((x) => x.nodeId === 'b')?.savedCents).toBe(0);
+  });
+
+  it('divides one capped share between two sinks on the same output', () => {
+    const g = graph([
+      balance('bal', 100000),
+      income('pay', 'Paycheck', 100000, once),
+      prio('ps', [
+        { id: 'first', label: 'Save', priority: 1, capCents: 40000 },
+        { id: 'second', label: 'Rest', priority: 2 },
+      ]),
+      goal('a', 'Goal A'),
+      goal('b', 'Goal B'),
+    ], [
+      edge('e1', 'pay', 'ps'),
+      edge('e2', 'ps', 'a', 'first'),
+      edge('e3', 'ps', 'b', 'first'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    expect(r.goals.find((x) => x.nodeId === 'a')?.savedCents).toBe(20000);
+    expect(r.goals.find((x) => x.nodeId === 'b')?.savedCents).toBe(20000);
+  });
+
+  it('rejects a negative cap', () => {
+    const g = graph([
+      balance('bal', 100000),
+      prio('ps', [{ id: 'first', label: 'Save', priority: 1, capCents: -100 }]),
+    ]);
+    expect(validateGraph(g).errors.some((e) => e.message.includes('negative cap'))).toBe(true);
+  });
+});
+
+describe('forecast: conditionals move money', () => {
+  const cond = (id: string, op: 'gt' | 'lt', thresholdCents: number): PlanNode => ({
+    id, type: 'conditional', label: 'If balance', position: { x: 0, y: 0 },
+    predicate: { op, thresholdCents }, trueLabel: 'Save it', falseLabel: 'Keep it',
+  });
+  const goal = (id: string, name: string): PlanNode => ({
+    id, type: 'goal', label: name, position: { x: 0, y: 0 }, name,
+    targetCents: 100000, targetDate: '2027-06-01',
+  });
+  const once = { kind: 'once', date: '2026-11-05' } as const;
+
+  it('sends the whole paycheck down the true branch when the balance clears the threshold', () => {
+    const g = graph([
+      balance('bal', 100000),
+      income('pay', 'Paycheck', 100000, once),
+      cond('c', 'gt', 50000),
+      goal('save', 'Savings'),
+    ], [
+      edge('e1', 'pay', 'c'),
+      edge('e2', 'c', 'save', 'true'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    // Balance after the paycheck lands: $2,000 > $500 → true branch.
+    expect(r.goals.find((x) => x.nodeId === 'save')?.savedCents).toBe(100000);
+    expect(day(r.ledger, '2026-11-05').balanceCents).toBe(100000);
+  });
+
+  it('sends it down the false branch when the balance stays under the threshold', () => {
+    const g = graph([
+      balance('bal', 10000),
+      income('pay', 'Paycheck', 20000, once),
+      cond('c', 'gt', 50000),
+      goal('save', 'Savings'),
+      goal('keep', 'Keep'),
+    ], [
+      edge('e1', 'pay', 'c'),
+      edge('e2', 'c', 'save', 'true'),
+      edge('e3', 'c', 'keep', 'false'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    // Balance after the paycheck lands: $300 < $500 → false branch.
+    expect(r.goals.find((x) => x.nodeId === 'save')?.savedCents).toBe(0);
+    expect(r.goals.find((x) => x.nodeId === 'keep')?.savedCents).toBe(20000);
+    expect(day(r.ledger, '2026-11-05').balanceCents).toBe(10000);
+  });
+
+  it('supports the lt operator', () => {
+    const g = graph([
+      balance('bal', 10000),
+      income('pay', 'Paycheck', 20000, once),
+      cond('c', 'lt', 50000),
+      goal('save', 'Savings'),
+    ], [
+      edge('e1', 'pay', 'c'),
+      edge('e2', 'c', 'save', 'true'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    // $300 < $500 → true branch.
+    expect(r.goals.find((x) => x.nodeId === 'save')?.savedCents).toBe(20000);
+  });
+
+  it('a percentage split wins over a priority split wired to the same income', () => {
+    const g = graph([
+      balance('bal', 100000),
+      income('pay', 'Paycheck', 100000, once),
+      { id: 's', type: 'percentageSplit', label: 'Split', position: { x: 0, y: 0 },
+        outputs: [{ id: 'bills', label: 'Bills', percent: 80 }, { id: 'save', label: 'Save', percent: 20 }] } as PlanNode,
+      { id: 'ps', type: 'prioritySplit', label: 'Priority', position: { x: 0, y: 0 },
+        outputs: [{ id: 'first', label: 'Save', priority: 1, capCents: 60000 }] } as PlanNode,
+      goal('a', 'Percent save'),
+      goal('b', 'Priority save'),
+    ], [
+      edge('e1', 'pay', 's'),
+      edge('e2', 'pay', 'ps'),
+      edge('e3', 's', 'a', 'save'),
+      edge('e4', 'ps', 'b', 'first'),
+    ]);
+    const r = forecast(g, assumptions({ horizonDays: 10 }), { startDate: START });
+    expect(r.goals.find((x) => x.nodeId === 'a')?.savedCents).toBe(20000);
+    expect(r.goals.find((x) => x.nodeId === 'b')?.savedCents).toBe(0);
   });
 });

@@ -269,10 +269,6 @@ export function TimelapseBar() {
           </div>
         </div>
 
-        <p className="cf-tl-note">
-          Only percentage splits move money here. Priority and conditional nodes don&apos;t move
-          money yet.
-        </p>
       </div>
     </div>
   );

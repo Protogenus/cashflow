@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   DEFAULT_RULES,
   evaluateAlerts,
@@ -18,6 +18,17 @@ import type {
 } from './types';
 
 const START: ISODate = '2026-11-03'; // a Tuesday
+
+// The forecast window starts at real "today", so these fixed-date graphs
+// rot as the calendar moves. Pin the clock to START and the expectations
+// hold forever.
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-03T12:00:00'));
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 function balance(id: string, cents: number): StartingBalanceNode {
   return { id, type: 'startingBalance', label: 'Checking', position: { x: 0, y: 0 }, balanceCents: cents, asOf: START };
