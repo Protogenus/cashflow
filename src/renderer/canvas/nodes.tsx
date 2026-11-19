@@ -45,13 +45,44 @@ function Label({ node }: { node: PlanNode }) {
   );
 }
 
+/**
+ * Node facts as labelled rows — one fact per row, label left, value right,
+ * hairline between rows — instead of a run-on paragraph. The value's tone
+ * is money direction only (green in, red out); labels stay muted.
+ */
 function Status({ status }: { status: CardStatus }) {
   return (
     <>
-      <div className="cf-node-status money">{status.primary}</div>
-      {status.secondary && <div className="cf-node-status">{status.secondary}</div>}
+      <dl className="cf-node-stats">
+        {status.chunks.map((c) => (
+          <div className="cf-node-stat" key={c.label}>
+            <dt>{c.label}</dt>
+            <dd className={`money${c.tone ? ` cf-tone-${c.tone}` : ''}`}>{c.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {status.note && <div className="cf-node-note">{status.note}</div>}
     </>
   );
+}
+
+/**
+ * What a pulse's note means as a charge name. Engine notes are "→ Rent"
+ * (the money's destination) or "$370 kept in balance" (the amount is already
+ * the chip's own number, so only the words carry). Balance pulses have no
+ * note at all. Anything without a readable name falls back to its kind.
+ */
+function pulseName(pulse: NonNullable<CFNodeData['flowPulses']>[number]): string {
+  if (pulse.kind === 'balance') return 'Balance';
+  const note = (pulse.note ?? '').trim();
+  if (note.startsWith('→ ')) return note.slice(2);
+  const kept = note.match(/^\$[\d,]+(?:\.\d+)?\s+(.+)$/);
+  if (kept) {
+    const words = kept[1];
+    return words.charAt(0).toUpperCase() + words.slice(1);
+  }
+  if (note) return note;
+  return pulse.kind.charAt(0).toUpperCase() + pulse.kind.slice(1);
 }
 
 function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulses']>[number] }) {
@@ -59,13 +90,11 @@ function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulses']>[numb
   const sign = pulse.amountCents < 0 ? '−' : isBalance ? '' : '+';
   const abs = Math.abs(pulse.amountCents);
   const d = Math.floor(abs / 100);
-  const label = `${sign}$${d.toLocaleString('en-US')}`;
+  const amount = `${sign}$${d.toLocaleString('en-US')}`;
   return (
     <span className={`cf-flow-chip ${pulse.kind}`} aria-hidden="true">
-      {label}
-      {(pulse.note || isBalance) && (
-        <span className="cf-flow-note">{isBalance ? 'balance' : pulse.note}</span>
-      )}
+      <span className="cf-flow-name">{pulseName(pulse)}</span>
+      <span className="cf-flow-amount money">{amount}</span>
     </span>
   );
 }
@@ -199,8 +228,7 @@ export function ConditionalNode(props: NodeProps) {
           </span>
           <span>{node.label}</span>
         </div>
-        <div className="cf-node-status money">{status.primary}</div>
-        {status.secondary && <div className="cf-node-status">{status.secondary}</div>}
+        <Status status={status} />
       </div>
       <Handle type="target" position={Position.Left} id="in" style={{ top: '50%' }} aria-label="input" />
       <Handle type="source" position={Position.Right} id="true" style={{ top: '32%' }} aria-label="true output" title="true" />

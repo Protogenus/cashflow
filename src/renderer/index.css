@@ -17,6 +17,8 @@
   --text-muted: #54665a;
   --income: #4e7d5b;        /* darkened matcha green — readable on pale sage */
   --expense: #c24a68;       /* darkened matcha pink — money out */
+  --deposit: #4e7d5b;       /* money in: edges + travelling dots */
+  --withdraw: #ed1c1c;      /* money out: edges + travelling dots — true red */
   --accent: #d14a6e;        /* darkened matcha pink — highlights */
   --accent-deep: #a83452;   /* readable pink for text/icons on pale sage */
   --warning: #8a6d2b;       /* darkened tan — readable on pale sage */
@@ -31,7 +33,7 @@
   --node-balance: #5e8a99;  /* darkened matcha blue */
   --node-logic: #96698c;    /* darkened matcha mauve (splits + conditional) */
   --node-goal: #4e7d5b;     /* darkened matcha green */
-  --node-debt: #a67c52;     /* warm tan-brown */
+  --node-debt: #ed1c1c;     /* debt — true red, per spec */
   --node-variable: #8a6d2b; /* darkened tan */
   --on-accent: #d1ded3;
   /* dark sidebar (the left node rail) — dark in both themes */
@@ -45,7 +47,7 @@
   --sb-expense: #ff819f;
   --sb-logic: #ba8eaf;
   --sb-goal: #7eb08a;
-  --sb-debt: #d2b48c;
+  --sb-debt: #ed1c1c;
   --sb-variable: #d2b48c;
   --radius-card: 3px;
   --radius-input: 3px;
@@ -62,6 +64,8 @@
   --text-muted: #9ab0a4;
   --income: #7eb08a;        /* raw matcha green */
   --expense: #ff819f;       /* raw matcha pink — money out */
+  --deposit: #7eb08a;       /* money in: edges + travelling dots */
+  --withdraw: #ed1c1c;      /* money out: edges + travelling dots — true red */
   --accent: #ff819f;
   --accent-deep: #ff819f;
   --warning: #d2b48c;       /* raw matcha tan */
@@ -76,7 +80,7 @@
   --node-balance: #7ea4b0;
   --node-logic: #ba8eaf;    /* raw matcha mauve */
   --node-goal: #7eb08a;
-  --node-debt: #d2b48c;
+  --node-debt: #ed1c1c;     /* debt — true red, per spec */
   --node-variable: #d2b48c;
   --on-accent: #273136;
   --sidebar: #1e2629;
@@ -135,8 +139,13 @@ input[type="range"] {
 .cf-canvas .react-flow__controls-button:hover {
   background: var(--surface-2);
 }
-.cf-edge-income { stroke: var(--income); }
-.cf-edge-expense { stroke: var(--expense); }
+/* Edge tone is money direction: deposits green, withdrawals red.
+   React Flow paints the path from --xy-edge-stroke (its own rule sets
+   stroke on .react-flow__edge-path, so a plain `stroke` on the wrapping
+   <g> never reaches the path — the variable inherits down to it instead). */
+.cf-edge-income { --xy-edge-stroke: var(--deposit); }
+.cf-edge-expense { --xy-edge-stroke: var(--withdraw); }
+.cf-edge-logic { --xy-edge-stroke: var(--node-logic); }
 .cf-canvas .react-flow__edge.selected .react-flow__edge-path {
   stroke: var(--accent);
   stroke-width: 2.5;
@@ -175,10 +184,45 @@ input[type="range"] {
   gap: 6px;
   margin-bottom: 2px;
 }
-.cf-node .cf-node-status {
+/* Node facts as labelled rows: one fact per row, label left, value right,
+   hairline between rows. Replaces the old run-on paragraph status. */
+.cf-node-stats {
+  margin: 4px 0 0;
+  padding: 0;
+}
+.cf-node-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  line-height: 1.35;
+}
+.cf-node-stat:first-child {
+  border-top: none;
+  padding-top: 1px;
+}
+.cf-node-stat dt {
+  color: var(--text-muted);
+  font-weight: 500;
+  flex: none;
+}
+.cf-node-stat dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+}
+.cf-node-stat dd.cf-tone-in { color: var(--deposit); }
+.cf-node-stat dd.cf-tone-out { color: var(--withdraw); }
+.cf-node-note {
+  margin-top: 4px;
   color: var(--text-muted);
   font-size: 11px;
-  line-height: 1.45;
+  font-style: italic;
 }
 .cf-node .cf-node-icon {
   flex: none;
@@ -219,14 +263,15 @@ input[type="range"] {
   stroke: var(--accent);
   stroke-width: 3;
 }
-/* gamified money dots traveling into the target node (timelapse) */
+/* Travelling money dots follow the edge direction: deposits green,
+   withdrawals red. Logic edges (split to split/conditional) stay amber. */
 .cf-money-dot {
   fill: var(--accent);
   stroke: var(--surface);
   stroke-width: 2;
 }
-.cf-edge-income .cf-money-dot { fill: var(--sage); }
-.cf-edge-expense .cf-money-dot { fill: var(--expense); }
+.cf-edge-income .cf-money-dot { fill: var(--deposit); }
+.cf-edge-expense .cf-money-dot { fill: var(--withdraw); }
 .cf-edge-logic .cf-money-dot { fill: var(--amber); }
 
 /* The multi-selection rectangle is visual only: with pointer-events it swallows
@@ -236,29 +281,31 @@ input[type="range"] {
   pointer-events: none !important;
 }
 
-/* Flow chips anchor to the bottom of their parent node: a static footer
-   row inside the card (margin-top: auto on the flex-column node), never
-   hanging below the node where they overlapped edges / other nodes. */
+/* Flow chips attach to the OUTSIDE of their parent node's bottom border
+   and stack vertically, one charge per chip (name on top, amount below).
+   Absolute positioning keeps them out of the node's measured size, so they
+   never stretch the card or move its handles — they hang below the border
+   the way the 2026-11-04 straddle did, as a column instead of a row. */
 .cf-flow-chips {
-  position: static;
-  transform: none;
-  z-index: auto;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 6;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
-  align-items: center;
-  justify-content: flex-start;
   pointer-events: none;
   max-width: 100%;
-  margin-top: auto;
-  padding-top: 8px;
+  margin-top: 5px;
 }
 .cf-flow-chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
   font-size: 11px;
-  font-weight: 700;
   line-height: 1.3;
-  padding: 2px 8px;
+  padding: 3px 8px;
   border-radius: 3px;
   background: var(--surface);
   border: 1.5px solid currentColor;
@@ -267,22 +314,27 @@ input[type="range"] {
   animation: cf-flow-pop 0.25s ease-out;
   pointer-events: none;
 }
-.cf-flow-chip.income { color: var(--income); }
-.cf-flow-chip.expense { color: var(--expense); }
+/* Charge name on top, amount below — the name is what the eye reads first. */
+.cf-flow-chip .cf-flow-name {
+  font-weight: 600;
+  font-size: 11px;
+}
+.cf-flow-chip .cf-flow-amount {
+  font-weight: 700;
+  font-size: 12px;
+}
+.cf-flow-chip.income { color: var(--deposit); }
+.cf-flow-chip.expense { color: var(--withdraw); }
 .cf-flow-chip.split { color: var(--node-logic); }
 .cf-flow-chip.balance { color: var(--node-balance); }
-.cf-flow-chip.outflow { color: var(--expense); }
-/* virtual timelapse route for money with no drawn edge (bill payments) */
+.cf-flow-chip.outflow { color: var(--withdraw); }
+/* virtual timelapse route for money with no drawn edge (bill payments —
+   money out, so the withdrawal red) */
 .cf-virtual-path {
-  stroke: var(--expense);
+  stroke: var(--withdraw);
   stroke-width: 2;
   stroke-dasharray: 6 5;
   opacity: 0.55;
-}
-.cf-flow-chip .cf-flow-note {
-  display: block;
-  font-weight: 400;
-  font-size: 10px;
 }
 @keyframes cf-flow-pop {
   from { transform: scale(0.5); opacity: 0; }
@@ -307,7 +359,7 @@ input[type="range"] {
 
 /* hexagon (conditional) needs a transform wrapper so handles stay put */
 
-.cf-hex-wrap { width: 190px; height: 104px; position: relative; }
+.cf-hex-wrap { width: 190px; height: 124px; position: relative; }
 .cf-hex-border {
   position: absolute; inset: 0;
   background: var(--node-logic);
@@ -321,6 +373,21 @@ input[type="range"] {
   font-size: 11px; color: var(--text); text-align: center; padding: 0 30px;
 }
 .cf-hex .cf-node-icon { color: var(--node-logic); }
+/* Hexagons are narrow: stack each fact (label above value, centered)
+   instead of the side-by-side rows rectangular cards use. */
+.cf-hex .cf-node-stats {
+  width: 100%;
+  margin-top: 2px;
+}
+.cf-hex .cf-node-stat {
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 1px 0;
+  font-size: 10px;
+  border-top: none;
+}
+.cf-hex .cf-node-stat dd { text-align: center; }
 .cf-hex-wrap.selected .cf-hex-border { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .cf-orphan-badge {
@@ -491,3 +558,261 @@ html, body {
   border: 2px solid transparent;
 }
 *::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---------- money-direction tones (shared by node stats + timelapse) ---------- */
+.cf-tone-in { color: var(--deposit); }
+.cf-tone-out { color: var(--withdraw); }
+
+/* ---------- Timelapse transport ---------- */
+.cf-timelapse {
+  width: 100%;
+  max-width: 44rem;
+  padding: 14px 16px 12px;
+}
+.cf-tl-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.cf-tl-title {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.cf-tl-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cf-tl-date {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cf-tl-day {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.cf-tl-balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex: none;
+}
+.cf-tl-balance-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.cf-tl-balance-value {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.cf-tl-delta {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Scrubber: range + event ticks + day labels. */
+.cf-tl-scrub {
+  padding-top: 12px;
+}
+.cf-tl-range {
+  display: block;
+  width: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.cf-tl-ticks {
+  position: relative;
+  height: 6px;
+  margin-top: 2px;
+}
+.cf-tl-tick {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  transform: translateX(-50%);
+  border-radius: 3px;
+  background: var(--accent);
+}
+.cf-tl-scrub-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* Today's movements: labelled rows, one per transfer. */
+.cf-tl-moves {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.cf-tl-moves-title {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+.cf-tl-move {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 12px;
+}
+.cf-tl-move-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cf-tl-move-amount {
+  flex: none;
+  font-weight: 700;
+}
+.cf-tl-move-empty {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 3px 0;
+}
+
+/* Transport + pickers. */
+.cf-tl-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.cf-tl-transport {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cf-tl-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 34px;
+  min-height: 32px;
+  padding: 6px 9px;
+}
+.cf-tl-play {
+  padding: 6px 14px;
+}
+.cf-tl-pause-toggle {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cf-tl-toggle-state {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+.cf-tl-pause-on {
+  border-color: var(--accent);
+}
+.cf-tl-pause-on .cf-tl-toggle-state {
+  background: var(--text);
+  color: var(--bg);
+}
+.cf-tl-pickers {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cf-tl-pickers label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.cf-tl-select {
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 6px;
+}
+.cf-tl-note {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Collapsed launch: a docked bar, not a lone button. */
+.cf-tl-launch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  box-shadow: var(--shadow-card);
+  padding: 8px 16px 8px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.cf-tl-launch:hover {
+  background: var(--surface-2);
+}
+.cf-tl-launch-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  background: var(--text);
+  color: var(--bg);
+  border-radius: 3px;
+}
+.cf-tl-launch-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.cf-tl-launch-title {
+  font-size: 13px;
+  font-weight: 700;
+}
+.cf-tl-launch-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+}

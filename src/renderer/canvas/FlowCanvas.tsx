@@ -29,7 +29,14 @@ import { FlowVirtualOverlay } from './FlowVirtualOverlay';
 import { NODE_META, createNode } from './templates';
 import type { NodeType, PlanNode } from '../engine/types';
 
-function edgeClass(source: PlanNode | undefined): string {
+/**
+ * Edge tone by money direction, not by source type alone. A split's branches
+ * carry money to different places, so they are coloured by the target:
+ * into a bill or a debt is a withdrawal (red), into savings/a goal/the
+ * balance is a deposit (green). Anything else off a split/conditional keeps
+ * the logic tone. Income sources are deposits, expense sources withdrawals.
+ */
+function edgeClass(source: PlanNode | undefined, target: PlanNode | undefined): string {
   if (!source) return '';
   // Explicit checks (not the isIncomeSource guard): the guard's false branch
   // would narrow away 'variableAmount' and break the expense check below.
@@ -37,7 +44,25 @@ function edgeClass(source: PlanNode | undefined): string {
     source.type === 'income' || (source.type === 'variableAmount' && source.direction === 'income');
   if (incomeLike) return 'cf-edge-income';
   if (source.type === 'expense' || source.type === 'variableAmount') return 'cf-edge-expense';
-  if (source.type === 'percentageSplit' || source.type === 'prioritySplit') return 'cf-edge-logic';
+  if (source.type === 'percentageSplit' || source.type === 'prioritySplit' || source.type === 'conditional') {
+    if (!target) return 'cf-edge-logic';
+    if (
+      target.type === 'expense' ||
+      target.type === 'debt' ||
+      (target.type === 'variableAmount' && target.direction !== 'income')
+    ) {
+      return 'cf-edge-expense';
+    }
+    if (
+      target.type === 'goal' ||
+      target.type === 'startingBalance' ||
+      target.type === 'income' ||
+      (target.type === 'variableAmount' && target.direction === 'income')
+    ) {
+      return 'cf-edge-income';
+    }
+    return 'cf-edge-logic';
+  }
   return '';
 }
 
@@ -183,6 +208,7 @@ export function FlowCanvas() {
     () =>
       edges.map((e) => {
         const src = nodes.find((n) => n.id === e.source);
+        const tgt = nodes.find((n) => n.id === e.target);
         const flowing = flowEdgeIds.has(e.id) && !anyDragging;
         return {
           id: e.id,
@@ -193,7 +219,7 @@ export function FlowCanvas() {
           targetHandle: e.targetHandle,
           data: {
             flowing,
-            tone: edgeClass(src),
+            tone: edgeClass(src, tgt),
             amountCents: flowAmounts.get(e.id) ?? 0,
           },
           selected: e.id === selectedEdgeId,
@@ -205,6 +231,14 @@ export function FlowCanvas() {
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
       const st = useGraphStore.getState();
+      // Accumulate the whole batch into one set and commit once. React Flow
+      // sends a marquee as one batch of select changes; committing per change
+      // read the pre-batch selection every time (the captured `st` snapshot
+      // never sees the earlier commits), so only the last change in the batch
+      // survived — a marquee over five nodes ended up selecting one or two.
+      const ids = new Set(st.selectedNodeIds);
+      let selectionChanged = false;
+      let selectedAny = false;
       for (const c of changes) {
         if (c.type === 'position' && c.position) {
           st.moveNode(c.id, c.position); // silent; history grouped by drag start/stop
@@ -212,13 +246,18 @@ export function FlowCanvas() {
           // Skipped while our own capture-phase click handling owns this
           // node's selection for the gesture (see onMouseDownCapture).
           if (suppressSelectRef.current === c.id) continue;
-          // Accumulate into the multi-selection set (marquee / shift-click).
-          const ids = new Set(st.selectedNodeIds);
-          if (c.selected) ids.add(c.id);
-          else ids.delete(c.id);
-          st.setSelectedMany([...ids]);
-          if (c.selected) setSelectedEdgeId(null);
+          if (c.selected) {
+            ids.add(c.id);
+            selectedAny = true;
+          } else {
+            ids.delete(c.id);
+          }
+          selectionChanged = true;
         }
+      }
+      if (selectionChanged) {
+        st.setSelectedMany([...ids]);
+        if (selectedAny) setSelectedEdgeId(null);
       }
     },
     [],
@@ -276,7 +315,10 @@ export function FlowCanvas() {
       nodeTypes={nodeTypes}
       onNodesChange={onNodesChange}
       selectionOnDrag
-      selectionMode={SelectionMode.Partial}
+      // Full: a node is selected only when the marquee surrounds it entirely.
+      // Partial selected any node the rectangle merely grazed, so the same
+      // drag could select a node or not depending on a pixel of overlap.
+      selectionMode={SelectionMode.Full}
       panOnDrag={[1, 2]}
       edgeTypes={edgeTypes}
       onConnect={onConnect}
