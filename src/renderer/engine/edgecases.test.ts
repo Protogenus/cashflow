@@ -113,9 +113,9 @@ describe('edge cases', () => {
     expect(v.errors.some((e) => e.nodeId === 'goal' && e.message.includes('target date'))).toBe(true);
   });
 
-  it('empty graph: tells the user to add a starting-balance node', () => {
+  it('empty graph: tells the user to add a Bank node', () => {
     const v = validateGraph({ nodes: [], edges: [] });
     expect(v.valid).toBe(false);
-    expect(v.errors[0].message).toContain('starting-balance');
+    expect(v.errors[0].message).toContain('Bank node');
   });
 });

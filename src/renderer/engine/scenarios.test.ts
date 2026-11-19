@@ -232,11 +232,11 @@ describe('scenario-aware forecast', () => {
     expect(res.ledger[0].balanceCents).toBe(100000 + 200000);
   });
 
-  it('disabling the starting balance is an honest error, not a silent chart', () => {
+  it('disabling the Bank is an honest error, not a silent chart', () => {
     const g = twoExpenseGraph();
     expect(() =>
       forecast(g, ASSUMPTIONS, { startDate: START, disabledNodeIds: ['bal'] }),
-    ).toThrow(/starting-balance/);
+    ).toThrow(/Bank node/);
   });
 });
 

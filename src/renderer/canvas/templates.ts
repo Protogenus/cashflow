@@ -15,7 +15,7 @@ import type {
 } from '../engine/types';
 
 export const NODE_META: Record<NodeType, { title: string; blurb: string }> = {
-  startingBalance: { title: 'Starting balance', blurb: 'What your account shows today' },
+  startingBalance: { title: 'Bank', blurb: 'What your account shows today' },
   income: { title: 'Income', blurb: 'Paycheck or other money in, on a schedule' },
   expense: { title: 'Expense', blurb: 'A bill: amount, due date, frequency' },
   variableAmount: { title: 'Variable amount', blurb: 'Min / typical / max — a bill or irregular income' },

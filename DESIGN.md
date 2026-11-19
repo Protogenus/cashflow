@@ -80,7 +80,7 @@ Every node is the **same rectangular card** with a 5px solid left-border accent 
 
 | Node type | Left-border accent | Icon (Lucide) | Card shows |
 |---|---|---|---|
-| Starting balance | `--node-balance` (blue) | circle-dollar-sign | Balance + as-of date |
+| Bank | `--node-balance` (blue) | piggy-bank | Balance + as-of date. Input handle on the left (income flows in), output handle on the right (pays bills) |
 | Income | `--income` (green) | banknote-check | Amount, frequency, next payday |
 | Expense | `--node-expense` (red `#ED1C1C`) | banknote-arrow-down | Amount, frequency, due date |
 | Variable amount | `--node-variable` (tan) | trending-up-down | Direction, min / typical / max, next |

@@ -164,9 +164,23 @@ function InLeft() {
   return <Handle type="target" position={Position.Left} id="in" aria-label="input" />;
 }
 
+/**
+ * The Bank: money flows in (income lands here) and out (it pays bills).
+ * Input handle on the left, output handle on the right — like every
+ * pass-through node, except its balance is the forecast's day-0 seed.
+ */
 export function StartingBalanceNode(props: NodeProps) {
   return (
-    <RectShell {...props} className="cf-node-balance" handles={<OutRight />} />
+    <RectShell
+      {...props}
+      className="cf-node-balance"
+      handles={
+        <>
+          <InLeft />
+          <OutRight />
+        </>
+      }
+    />
   );
 }
 

@@ -208,9 +208,9 @@ describe('forecast: variable amounts use the typical value', () => {
 });
 
 describe('forecast: invalid graphs throw', () => {
-  it('throws with no starting-balance node', () => {
+  it('throws with no Bank node', () => {
     const g = graph([income('pay', 'Paycheck', 100, { kind: 'once', date: '2026-11-05' })]);
-    expect(() => forecast(g, assumptions(), { startDate: START })).toThrow(/starting-balance/i);
+    expect(() => forecast(g, assumptions(), { startDate: START })).toThrow(/Bank node/i);
   });
 
   it('throws on a cycle instead of producing a wrong chart', () => {
@@ -288,10 +288,50 @@ describe('validateConnection', () => {
     expect(r.ok).toBe(false);
     expect(r.reason).toMatch(/cycle/i);
   });
-  it('rejects inputs to the starting-balance node', () => {
-    const r = validateConnection(g, 'a', 'bal');
+  it('accepts income flowing into the Bank', () => {
+    expect(validateConnection(g, 'a', 'bal')).toEqual({ ok: true });
+  });
+  it('rejects bills flowing into the Bank', () => {
+    const r = validateConnection(g, 'b', 'bal');
     expect(r.ok).toBe(false);
-    expect(r.reason).toMatch(/no inputs/i);
+    expect(r.reason).toMatch(/only money in/i);
+  });
+});
+
+describe('validateConnection: Bank handles', () => {
+  const g = graph(
+    [
+      balance('bal', 100),
+      income('pay', 'Paycheck', 100, { kind: 'once', date: '2026-11-05' }),
+      expense('rent', 'Rent', 50, { kind: 'once', date: '2026-11-05' }),
+      { id: 's', type: 'percentageSplit', label: 'Split', position: { x: 0, y: 0 },
+        outputs: [{ id: 'bills', label: 'Bills', percent: 80 }, { id: 'save', label: 'Save', percent: 20 }] } as PlanNode,
+      { id: 'goal', type: 'goal', label: 'Savings', position: { x: 0, y: 0 },
+        name: 'Savings', targetCents: 100000, targetDate: '2027-06-01' } as PlanNode,
+    ],
+    [],
+  );
+
+  it('accepts a split output flowing into the Bank', () => {
+    expect(validateConnection(g, 's', 'bal')).toEqual({ ok: true });
+  });
+  it('accepts the Bank paying a bill', () => {
+    expect(validateConnection(g, 'bal', 'rent')).toEqual({ ok: true });
+  });
+  it('rejects the Bank flowing into income', () => {
+    const r = validateConnection(g, 'bal', 'pay');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/only pay a bill/i);
+  });
+  it('rejects the Bank flowing into a goal', () => {
+    const r = validateConnection(g, 'bal', 'goal');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/only pay a bill/i);
+  });
+  it('rejects the Bank flowing into a split', () => {
+    const r = validateConnection(g, 'bal', 's');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toMatch(/only pay a bill/i);
   });
 });
 

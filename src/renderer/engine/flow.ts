@@ -288,6 +288,24 @@ function routeIncome(
         });
         bits.push(`${incomeName} ${money(perSink[j])} → ${sink.name}`);
       });
+    } else {
+      // Unrouted income wired straight into the Bank: show the money
+      // landing there instead of a bare "+$1,850". The walk already puts
+      // every income occurrence in the balance — this is the same money,
+      // drawn on its edge.
+      const bank = graph.nodes.find((n) => n.type === 'startingBalance');
+      const bankEdges = bank ? edgesFrom(graph.edges, incomeId, bank.id) : [];
+      if (bankEdges.length > 0) {
+        const bankName = byName.get(bank!.id) ?? 'Bank';
+        transfers.push({
+          fromId: incomeId,
+          toId: bank!.id,
+          edgeIds: bankEdges.map((e) => e.id),
+          amountCents,
+          label: `${incomeName} → ${bankName}`,
+        });
+        bits.push(`${incomeName} ${money(amountCents)} → ${bankName}`);
+      }
     }
   }
   return { transfers, pulses, bits };

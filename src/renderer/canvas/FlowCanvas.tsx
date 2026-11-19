@@ -44,6 +44,8 @@ function edgeClass(source: PlanNode | undefined, target: PlanNode | undefined): 
     source.type === 'income' || (source.type === 'variableAmount' && source.direction === 'income');
   if (incomeLike) return 'cf-edge-income';
   if (source.type === 'expense' || source.type === 'variableAmount') return 'cf-edge-expense';
+  // Money leaving the Bank to pay a bill is a withdrawal.
+  if (source.type === 'startingBalance') return 'cf-edge-expense';
   if (source.type === 'percentageSplit' || source.type === 'prioritySplit' || source.type === 'conditional') {
     if (!target) return 'cf-edge-logic';
     if (

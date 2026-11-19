@@ -1,7 +1,7 @@
 /**
  * templates/starterTemplates.ts — the 3 starter templates (DESIGN.md §7).
  *
- * Each template is a REAL, fully-wired graph: one starting-balance node,
+ * Each template is a REAL, fully-wired graph: one Bank node,
  * realistic incomes/expenses/goals, splits that sum to 100, and edges with
  * no cycles or duplicates. Dates anchor relative to today so the forecast
  * works the moment the template loads. Nothing here is placeholder data —

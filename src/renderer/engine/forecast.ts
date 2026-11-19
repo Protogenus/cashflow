@@ -4,7 +4,7 @@
  * The walk is event-based: income/expense/variableAmount nodes expand their
  * recurrences into dated occurrences; each day applies its events (income
  * before expenses — a visible assumption) to a running balance seeded by the
- * starting-balance node. Logic nodes route money in the walk: a percentage
+ * Bank node. Logic nodes route money in the walk: a percentage
  * split divides each wired income occurrence by percent, a priority split
  * fills its outputs in priority order up to their caps, and a conditional
  * sends the whole occurrence down its true or false branch based on the
@@ -117,7 +117,27 @@ export function validateConnection(
   if (!source || !target) return { ok: false, reason: 'Unknown node.' };
   if (sourceId === targetId) return { ok: false, reason: 'A node cannot connect to itself.' };
   if (target.type === 'startingBalance') {
-    return { ok: false, reason: 'The starting-balance node has no inputs.' };
+    // The Bank takes money in — but only money in. Income already lands
+    // in the balance, so an income → Bank edge is an honest picture of
+    // where the money goes; a split output wired here means "this share
+    // stays in the Bank" (same as an unconnected output). Anything else
+    // flowing into the Bank would imply movement the forecast doesn't model.
+    const moneyIn =
+      isIncomeSource(source) ||
+      source.type === 'percentageSplit' ||
+      source.type === 'prioritySplit' ||
+      source.type === 'conditional';
+    if (!moneyIn) {
+      return { ok: false, reason: 'Only money in can flow into the Bank.' };
+    }
+  }
+  if (source.type === 'startingBalance') {
+    // Money leaves the Bank to pay a bill — the bill still hits on its own
+    // schedule; the edge is the visual route. Other targets would imply
+    // routing the forecast doesn't model.
+    if (target.type !== 'expense') {
+      return { ok: false, reason: 'The Bank can only pay a bill directly.' };
+    }
   }
   if (graph.edges.some((e) => e.source === sourceId && e.target === targetId)) {
     return { ok: false, reason: 'These nodes are already connected.' };
@@ -144,10 +164,10 @@ export function validateGraph(graph: PlanGraph): GraphValidation {
 
   const balances = graph.nodes.filter((n) => n.type === 'startingBalance');
   if (balances.length === 0) {
-    errors.push({ message: 'Add a starting-balance node so the forecast has a day-0 balance.' });
+    errors.push({ message: 'Add a Bank node so the forecast has a day-0 balance.' });
   } else if (balances.length > 1) {
     for (const b of balances) {
-      errors.push({ nodeId: b.id, message: 'Only one starting-balance node is allowed.' });
+      errors.push({ nodeId: b.id, message: 'Only one Bank node is allowed.' });
     }
   }
 

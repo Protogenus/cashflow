@@ -237,3 +237,19 @@ describe('flowFrames: priority splits and conditionals', () => {
     expect(payday.summary).toMatch(/balance > \$500/);
   });
 });
+
+describe('flowFrames: Bank', () => {
+  it('shows income wired into the Bank landing there', () => {
+    const g = graph(
+      [balance('bal', 100000), income('pay', 'Paycheck', 100000, '2026-11-05')],
+      [edge('e1', 'pay', 'bal')],
+    );
+    const frames = flowFrames(g, assumptions(), OPTS);
+    const payday = frames[2];
+    const byLabel = new Map(payday.transfers.map((t) => [t.label, t]));
+    const toBank = byLabel.get('Paycheck → Checking');
+    expect(toBank?.amountCents).toBe(100000);
+    expect(toBank?.edgeIds).toEqual(['e1']);
+    expect(payday.summary).toMatch(/Paycheck \$1,000 → Checking/);
+  });
+});

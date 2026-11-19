@@ -84,7 +84,7 @@ function MoneyInput({ cents, onCommit, onBlur, ariaLabel, allowNegative }: {
   onCommit: (cents: number) => void;
   onBlur: () => void;
   ariaLabel?: string;
-  /** Starting balance can be negative (an overdrawn account is real). */
+  /** Bank balance can be negative (an overdrawn account is real). */
   allowNegative?: boolean;
 }) {
   const { changed } = useEditGroup();
