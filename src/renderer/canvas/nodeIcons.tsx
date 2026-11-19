@@ -37,7 +37,7 @@ export function NodeIcon({ type }: { type: NodeType }) {
       // lucide-goal
       return <Svg><path d="M12 13V2l8 4-8 4"/><path d="M20.561 10.222a9 9 0 1 1-12.55-5.29"/><path d="M8.002 9.997a5 5 0 1 0 8.9 2.02"/></Svg>;
     case 'debt':
-      // lucide-goal — the icon Blake supplied for debt is the same as the goal one
-      return <Svg><path d="M12 13V2l8 4-8 4"/><path d="M20.561 10.222a9 9 0 1 1-12.55-5.29"/><path d="M8.002 9.997a5 5 0 1 0 8.9 2.02"/></Svg>;
+      // lucide-banknote-x
+      return <Svg><path d="M13 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/><path d="m17 17 5 5"/><path d="M18 12h.01"/><path d="m22 17-5 5"/><path d="M6 12h.01"/><circle cx="12" cy="12" r="2"/></Svg>;
   }
 }
