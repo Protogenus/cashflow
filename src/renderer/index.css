@@ -34,6 +34,7 @@
   --node-logic: #96698c;    /* darkened matcha mauve (splits + conditional) */
   --node-goal: #4e7d5b;     /* darkened matcha green */
   --node-debt: #ed1c1c;     /* debt — true red, per spec */
+  --node-expense: #d95d00;  /* expense node accent — orange, per spec */
   --node-variable: #8a6d2b; /* darkened tan */
   --on-accent: #d1ded3;
   /* dark sidebar (the left node rail) — dark in both themes */
@@ -44,7 +45,7 @@
   /* per-type icon colors tuned for the dark sidebar — raw Matcha hexes */
   --sb-balance: #7ea4b0;
   --sb-income: #7eb08a;
-  --sb-expense: #ff819f;
+  --sb-expense: #ff8a3d;
   --sb-logic: #ba8eaf;
   --sb-goal: #7eb08a;
   --sb-debt: #ed1c1c;
@@ -81,6 +82,7 @@
   --node-logic: #ba8eaf;    /* raw matcha mauve */
   --node-goal: #7eb08a;
   --node-debt: #ed1c1c;     /* debt — true red, per spec */
+  --node-expense: #ff8a3d;  /* expense node accent — orange, per spec */
   --node-variable: #d2b48c;
   --on-accent: #273136;
   --sidebar: #1e2629;
@@ -240,13 +242,13 @@ input[type="range"] {
   border-bottom: 10px solid var(--income); /* up chevron = money in */
 }
 
-.cf-node-expense   { border-left: 5px solid var(--expense); }
-.cf-node-expense .cf-node-icon { color: var(--expense); }
+.cf-node-expense   { border-left: 5px solid var(--node-expense); }
+.cf-node-expense .cf-node-icon { color: var(--node-expense); }
 .cf-node-expense .cf-edge-chevron {
   position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
   width: 0; height: 0;
   border-left: 7px solid transparent; border-right: 7px solid transparent;
-  border-top: 10px solid var(--expense); /* down chevron = money out */
+  border-top: 10px solid var(--node-expense); /* down chevron = money out */
 }
 
 .cf-node-variable  { border: 1.5px dashed var(--node-variable); }
@@ -255,10 +257,12 @@ input[type="range"] {
 .cf-node-split    { border-left: 5px solid var(--node-logic); }
 .cf-node-split .cf-node-icon { color: var(--node-logic); }
 
-/* timelapse money-flow: glowing animated edges + pulsing amount chips */
+/* Timelapse money-flow: an edge carrying money gets thicker and its dots
+   travel — but it keeps its direction colour (red withdrawal / green
+   deposit) instead of turning accent pink, so a branch reads the same
+   colour playing as it does at rest. */
 .cf-edge-flow .react-flow__edge-path,
 .react-flow__edge-path.cf-edge-flow {
-  stroke: var(--accent);
   stroke-width: 3;
 }
 /* Travelling money dots follow the edge direction: deposits green,
@@ -279,22 +283,23 @@ input[type="range"] {
   pointer-events: none !important;
 }
 
-/* Flow chips attach to the OUTSIDE of their parent node's bottom border
-   and stack vertically, one charge per chip (name on top, amount below).
-   Absolute positioning keeps them out of the node's measured size, so they
-   never stretch the card or move its handles — they hang below the border
-   the way the 2026-11-04 straddle did, as a column instead of a row. */
+/* Flow chips attach to the OUTSIDE of their parent node's bottom border,
+   in rows of 2–3 chips (name on top, amount below) across the full width
+   of the card. Absolute positioning keeps them out of the node's measured
+   size, so they never stretch the card or move its handles — they hang
+   below the border the way the 2026-11-04 straddle did. */
 .cf-flow-chips {
   position: absolute;
   top: 100%;
   left: 0;
+  width: 100%;
   z-index: 6;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: flex-start;
   gap: 4px;
   pointer-events: none;
-  max-width: 100%;
   margin-top: 5px;
 }
 .cf-flow-chip {
