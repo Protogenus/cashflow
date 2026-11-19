@@ -282,3 +282,14 @@ Blake: "Selecting nodes is strange, sometimes it wont select a node, sometimes i
 - **Decision:** `--edge: #5D6F76` for every branch (including the virtual bill-payment route and the selected edge, which now reads by width only). `--focus: #5EB5A6` teal for the selected-node outline. The old per-direction edge tones are gone: `edgeClass` deleted from FlowCanvas, `tone` removed from FlowMoneyEdge data, and the `.cf-edge-income/.cf-edge-expense/.cf-edge-logic` stroke rules deleted.
 - **Dots:** new `canvas/dotTone.ts` — `dotToneForTarget(target)` decides by the TARGET node: green (`--deposit`) for Bank, goal, splits, conditionals, income and income-direction variables; red (`--withdraw`) for expenses, debts and expense-direction variables. A paycheck wired straight to Rent is red, because the money leaves. FlowMoneyEdge and FlowVirtualOverlay both take the class from it (`cf-dot-kept` / `cf-dot-spent`). Flow chips are untouched — they are not dots.
 - **Verified:** typecheck clean, build:web succeeds, 211/211 tests (5 new dotTone unit tests + 1 starter-template frame test locking in that payday routes only the savings share and bills pay on their due dates through their drawn edges). Headless Chromium: selected outline `rgb(94,181,166)`, every edge stroke `rgb(93,111,118)`, payday frame shows green dots, rent-due frame shows red dots.
+
+## 2026-11-19 — Node accent colours (Blake's hexes)
+- **Status:** decided
+- **Context:** Blake supplied exact accents per node type.
+- **Decision:** `--node-balance` (Bank) #0C76EA, `--node-income` #0276EC, `--node-expense` #D63A0A, `--node-variable` #009087, `--node-logic` (all three splits + conditional) #775EE7, `--node-goal` #009469, `--node-debt` #D73531. `--withdraw` is now #D63A0A too, so spent dots and outflow chips match the Expense accent. Palette `--sb-*` icons match the node accents.
+- **Deliberate split:** the Income node uses a new `--node-income` token. The old `--income` token stays matcha green (#7EB08A) because it is also money-in text in the ledger, Monte Carlo success colours, the tradeoff table, and the "valid" indicator — recolouring those blue was not asked for.
+
+## 2026-11-19 — Disclaimer box removed from Assumptions panel
+- **Status:** decided
+- **Context:** Blake: remove "Please note: Based on your inputs only. This is a planning tool, not financial advice. Forecasts are projections, not guarantees."
+- **Decision:** the warning-bordered box and the `DISCLAIMER` export are gone from AssumptionsPanel. The shorter `DISCLAIMER_SHORT` one-liner still appears at the bottom of the Forecast and Monte Carlo views, and the small "Based on your inputs — not financial advice." footnotes remain in the App header, Optimizer, Scenarios, Tradeoff, and Onboarding copy — those are different strings and were left alone.

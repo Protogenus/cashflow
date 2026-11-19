@@ -29,7 +29,7 @@ The theme is [Matcha](https://github.com/lucafalasco/matcha) (dark-only) — one
 --income:        #7EB08A;  /* money in — raw matcha green */
 --expense:       #FF819F;  /* money out — raw matcha pink */
 --deposit:       #7EB08A;  /* money staying with the player: travelling dots */
---withdraw:      #ED1C1C;  /* money leaving the player: travelling dots — true red */
+--withdraw:      #D63A0A;  /* money leaving the player: travelling dots, outflow chips */
 --focus:         #5EB5A6;  /* green-blue teal — selected-node focus border */
 --edge:          #5D6F76;  /* every branch: one standardized dark grey */
 --accent:        #FF819F;  /* highlights, median line, selection */
@@ -47,20 +47,21 @@ The theme is [Matcha](https://github.com/lucafalasco/matcha) (dark-only) — one
 --band-80:       rgba(255,129,159,.16);  /* 80% interval fill */
 --band-90:       rgba(255,129,159,.08);  /* 90% interval fill */
 --on-accent:     #273136;  /* text on --accent fills */
---node-balance:  #7EA4B0;
---node-logic:    #BA8EAF;  /* splits/conditionals — raw matcha mauve */
---node-goal:     #7EB08A;
---node-debt:     #FF8A3D;  /* debt — orange, per spec */
---node-expense:  #ED1C1C;  /* expense node accent — red, per spec */
---node-variable: #D2B48C;  /* variable amounts — raw matcha tan */
-/* Sidebar (dark rail) icon colors are the raw Matcha hexes in --sb-* */
+--node-balance:  #0C76EA;  /* Bank accent */
+--node-income:   #0276EC;  /* Income node accent (money-in text stays --income green) */
+--node-logic:    #775EE7;  /* splits/conditionals — violet */
+--node-goal:     #009469;  /* savings goal accent */
+--node-debt:     #D73531;  /* debt accent */
+--node-expense:  #D63A0A;  /* expense node accent */
+--node-variable: #009087;  /* variable amounts — teal */
+/* Sidebar (dark rail) icon colors match the node accents in --sb-* */
 --sidebar:       #1E2629;
 --sidebar-2:     #323F45;
 --sidebar-ink:   #D1DED3;
 --sidebar-muted: #9AB0A4;
 ```
 
-Rules: money direction is never color alone. Branches are all one standardized dark grey (`--edge`); the travelling dots carry the money meaning by possession — green while the money stays the player's (into the Bank, a goal, through a split), red once it leaves (`#ED1C1C`, a bill or debt paid). Chips keep their kind colours (green income, red expense/outflow, mauve split, blue balance). Below-$0 regions on charts use the danger color; pinch-point markers use warning. Chart gridlines use `--border`; never pure black/white text. All border radii are 3px, including pills and circles. A selected node shows a green-blue (`--focus`) outline, not pink.
+Rules: money direction is never color alone. Branches are all one standardized dark grey (`--edge`); the travelling dots carry the money meaning by possession — green while the money stays the player's (into the Bank, a goal, through a split), burnt orange-red (`#D63A0A`) once it leaves (a bill or debt paid). Chips keep their kind colours (green income, `#D63A0A` expense/outflow, violet split, blue balance). Below-$0 regions on charts use the danger color; pinch-point markers use warning. Chart gridlines use `--border`; never pure black/white text. All border radii are 3px, including pills and circles. A selected node shows a green-blue (`--focus`) outline, not pink.
 
 ---
 
@@ -82,21 +83,21 @@ Every node is the **same rectangular card** with a 5px solid left-border accent 
 
 | Node type | Left-border accent | Icon (Lucide) | Card shows |
 |---|---|---|---|
-| Bank | `--node-balance` (blue) | piggy-bank | Balance + as-of date. Input handle on the left (income flows in), output handle on the right (pays bills) |
-| Income | `--income` (green) | banknote-check | Amount, frequency, next payday |
-| Expense | `--node-expense` (red `#ED1C1C`) | banknote-arrow-down | Amount, frequency, due date |
-| Variable amount | `--node-variable` (tan) | trending-up-down | Direction, min / typical / max, next |
-| Percentage split | `--node-logic` (mauve) | square-percent | One row per output: percent · live amount |
-| Priority split | `--node-logic` (mauve) | star-plus | Priority order, caps ("Up to $X" / "No cap") |
-| Conditional | `--node-logic` (mauve) | scroll-text | "If balance > $X", true/false labels |
-| Goal / savings | `--node-goal` (green) | goal | Target, by date |
-| Debt | `--node-debt` (orange) | banknote-x | Balance owed, APR, payoff date |
+| Bank | `--node-balance` (`#0C76EA` blue) | piggy-bank | Balance + as-of date. Input handle on the left (income flows in), output handle on the right (pays bills) |
+| Income | `--node-income` (`#0276EC` blue) | banknote-check | Amount, frequency, next payday |
+| Expense | `--node-expense` (`#D63A0A` burnt orange-red) | banknote-arrow-down | Amount, frequency, due date |
+| Variable amount | `--node-variable` (`#009087` teal) | trending-up-down | Direction, min / typical / max, next |
+| Percentage split | `--node-logic` (`#775EE7` violet) | square-percent | One row per output: percent · live amount |
+| Priority split | `--node-logic` (`#775EE7` violet) | star-plus | Priority order, caps ("Up to $X" / "No cap") |
+| Conditional | `--node-logic` (`#775EE7` violet) | scroll-text | "If balance > $X", true/false labels |
+| Goal / savings | `--node-goal` (`#009469` green) | goal | Target, by date |
+| Debt | `--node-debt` (`#D73531` red) | banknote-x | Balance owed, APR, payoff date |
 
 **Routing in the forecast:** all three routers move money. A percentage split divides each wired income occurrence by percent; a priority split fills its outputs in priority order up to their caps; a conditional sends the whole occurrence down its true or false branch (predicate tested against the balance after the income lands). Goal/debt sinks on any routed branch leave the spendable balance; shares to expense outputs or to nothing stay spendable, and the expense still hits on its own schedule. An income wired into several routers is handled by the first that claims it (percentage, then priority, then conditional; first in node order within a kind). Direct income → goal/debt edges apply only when no router claims the income.
 
-**Flow chips:** during Timelapse playback, each node that moves money shows chips hanging below its bottom border, in rows of 3–4. A chip shows only the charge name; hovering it pops the amount up in a bubble above the chip. Chip borders follow money direction (green deposit, red withdrawal).
+**Flow chips:** during Timelapse playback, each node that moves money shows chips hanging below its bottom border, in rows of 3–4. A chip shows only the charge name; hovering it pops the amount up in a bubble above the chip. Chip borders follow money direction (green deposit, `#D63A0A` withdrawal).
 
-Edges: curved (bezier), all one standardized dark grey, subtle animation only while a simulation is running. A flowing edge only gets thicker — it never turns accent pink. The travelling dots on a flowing edge are green while the money stays the player's and red once it leaves (decided by the target node). Selected edge shows amount flowing. Invalid drop targets highlight red with the rejection reason as a tooltip ("would create a cycle").
+Edges: curved (bezier), all one standardized dark grey, subtle animation only while a simulation is running. A flowing edge only gets thicker — it never turns accent pink. The travelling dots on a flowing edge are green while the money stays the player's and `#D63A0A` once it leaves (decided by the target node). Selected edge shows amount flowing. Invalid drop targets highlight red with the rejection reason as a tooltip ("would create a cycle").
 
 **Validation surfacing:** field errors inline in the inspector; a validation count badge sits next to the "Run forecast" button; clicking it navigates to the offending node/field (RESEARCH.md §3).
 

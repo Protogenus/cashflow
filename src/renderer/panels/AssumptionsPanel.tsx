@@ -3,16 +3,13 @@
  * language, next to the results (PRODUCT_SPEC.md §3, user story 10).
  *
  * Each item is either editable (it is a setting — buffer, horizon, MC runs,
- * seed, currency) or read-only text (a modeling choice). The disclaimer is
- * part of this panel and repeated as a one-liner in the forecast and
- * Monte Carlo views.
+ * seed, currency) or read-only text (a modeling choice). A short disclaimer
+ * one-liner (DISCLAIMER_SHORT) is repeated in the forecast and Monte Carlo
+ * views.
  */
 import { useAssumptionsStore } from '../store/assumptionsStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { formatDollars, parseDollarsToCents } from '../lib/format';
-
-export const DISCLAIMER =
-  'Based on your inputs only. This is a planning tool, not financial advice. Forecasts are projections, not guarantees.';
 
 export const DISCLAIMER_SHORT =
   'Based on your inputs only — a planning tool, not financial advice. Projections, not guarantees.';
@@ -39,16 +36,6 @@ export function AssumptionsPanel() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <section aria-label="Disclaimer">
-        <div
-          className="rounded-[3px] border p-3 text-xs leading-relaxed"
-          style={{ borderColor: 'var(--warning)', background: 'var(--surface-2)' }}
-        >
-          <span className="font-semibold">Please note: </span>
-          {DISCLAIMER}
-        </div>
-      </section>
-
       <section aria-label="Editable assumptions">
         <h2 className="mb-2 text-sm font-semibold">Your settings</h2>
         <ul className="flex flex-col gap-2">

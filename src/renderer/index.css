@@ -14,7 +14,7 @@
   --income: #7eb08a;        /* raw matcha green */
   --expense: #ff819f;       /* raw matcha pink — money out */
   --deposit: #7eb08a;       /* money staying with the player: travelling dots */
-  --withdraw: #ed1c1c;      /* money leaving the player: travelling dots — true red */
+  --withdraw: #d63a0a;      /* money leaving the player: travelling dots, outflow chips */
   --focus: #5eb5a6;         /* green-blue teal — selected-node focus border */
   --edge: #5d6f76;          /* every branch: one standardized dark grey */
   --accent: #ff819f;
@@ -28,12 +28,15 @@
   --amber-soft: #3d362a;
   --sky: #7ea4b0;           /* raw matcha blue */
   --sky-soft: #26383e;
-  --node-balance: #7ea4b0;
-  --node-logic: #ba8eaf;    /* raw matcha mauve */
-  --node-goal: #7eb08a;
-  --node-debt: #ff8a3d;     /* debt — orange, per spec */
-  --node-expense: #ed1c1c;  /* expense node accent — red, per spec */
-  --node-variable: #d2b48c;
+  --node-balance: #0c76ea;  /* Bank accent */
+  --node-income: #0276ec;   /* Income node accent — separate from --income,
+                               which stays green for money-in text (ledger,
+                               Monte Carlo, tradeoff, valid indicator) */
+  --node-logic: #775ee7;    /* split + conditional accent */
+  --node-goal: #009469;     /* savings goal accent */
+  --node-debt: #d73531;     /* debt accent */
+  --node-expense: #d63a0a;  /* expense node accent */
+  --node-variable: #009087; /* variable-amount accent */
   --on-accent: #273136;
   /* Monte Carlo interval bands — accent pink at descending opacity
      (50% narrowest = strongest, 90% widest = faintest). */
@@ -45,14 +48,14 @@
   --sidebar-2: #323f45;     /* active/hover item */
   --sidebar-ink: #d1ded3;
   --sidebar-muted: #9ab0a4;
-  /* per-type icon colors tuned for the dark sidebar — raw Matcha hexes */
-  --sb-balance: #7ea4b0;
-  --sb-income: #7eb08a;
-  --sb-expense: #ed1c1c;
-  --sb-logic: #ba8eaf;
-  --sb-goal: #7eb08a;
-  --sb-debt: #ff8a3d;
-  --sb-variable: #d2b48c;
+  /* per-type icon colors for the dark sidebar — match the node accents */
+  --sb-balance: #0c76ea;
+  --sb-income: #0276ec;
+  --sb-expense: #d63a0a;
+  --sb-logic: #775ee7;
+  --sb-goal: #009469;
+  --sb-debt: #d73531;
+  --sb-variable: #009087;
   --radius-card: 3px;
   --radius-input: 3px;
   --shadow-card: 0 1px 3px rgb(0 0 0 / 0.3), 0 4px 14px rgb(0 0 0 / 0.25);
@@ -200,8 +203,8 @@ input[type="range"] {
 .cf-node-balance   { border-left: 5px solid var(--node-balance); }
 .cf-node-balance .cf-node-icon { color: var(--node-balance); }
 
-.cf-node-income    { border-left: 5px solid var(--income); }
-.cf-node-income .cf-node-icon { color: var(--income); }
+.cf-node-income    { border-left: 5px solid var(--node-income); }
+.cf-node-income .cf-node-icon { color: var(--node-income); }
 
 .cf-node-expense   { border-left: 5px solid var(--node-expense); }
 .cf-node-expense .cf-node-icon { color: var(--node-expense); }
