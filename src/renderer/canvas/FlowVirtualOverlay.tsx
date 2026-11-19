@@ -9,6 +9,8 @@
  * viewport and pans/zooms with the canvas.
  */
 import { getBezierPath, Position, useNodes, useViewport, useStore as useRFStore } from '@xyflow/react';
+import { dotToneForTarget } from './dotTone';
+import type { PlanNode } from '../engine/types';
 import { useFlowStore } from '../store/flowStore';
 
 export function FlowVirtualOverlay() {
@@ -44,7 +46,18 @@ export function FlowVirtualOverlay() {
       targetY: dst.position.y + dh / 2,
       targetPosition: srcRight ? Position.Left : Position.Right,
     });
-    return [{ key: `${t.fromId}-${t.toId}-${vi}`, path, amountCents: t.amountCents }];
+    // Virtual routes are money with no drawn edge (bills paid straight out
+    // of the Bank). The dots follow the same possession rule as drawn
+    // edges: red when the money leaves the player, green while it stays.
+    const target = (dst.data as { node?: PlanNode } | undefined)?.node;
+    return [
+      {
+        key: `${t.fromId}-${t.toId}-${vi}`,
+        path,
+        amountCents: t.amountCents,
+        dotTone: dotToneForTarget(target),
+      },
+    ];
   });
   if (routes.length === 0) return null;
 
@@ -62,10 +75,10 @@ export function FlowVirtualOverlay() {
         zIndex: 5,
       }}
     >
-      {routes.map(({ key, path, amountCents }) => {
+      {routes.map(({ key, path, amountCents, dotTone }) => {
         const dots = Math.min(4, Math.max(2, Math.round(amountCents / 100000)));
         return (
-          <g key={key} className="cf-edge-expense">
+          <g key={key} className={dotTone === 'spent' ? 'cf-dot-spent' : 'cf-dot-kept'}>
             <path d={path} className="cf-virtual-path" fill="none" />
             {Array.from({ length: dots }, (_, i) => (
               <circle key={i} r={6} className="cf-money-dot">

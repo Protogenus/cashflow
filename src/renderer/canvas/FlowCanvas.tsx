@@ -26,47 +26,9 @@ import { cardStatus } from './cardStatus';
 import { nodeTypes, type CFNodeData } from './nodes';
 import { FlowMoneyEdge } from './FlowMoneyEdge';
 import { FlowVirtualOverlay } from './FlowVirtualOverlay';
+import { dotToneForTarget } from './dotTone';
 import { NODE_META, createNode } from './templates';
-import type { NodeType, PlanNode } from '../engine/types';
-
-/**
- * Edge tone by money direction, not by source type alone. A split's branches
- * carry money to different places, so they are coloured by the target:
- * into a bill or a debt is a withdrawal (red), into savings/a goal/the
- * balance is a deposit (green). Anything else off a split/conditional keeps
- * the logic tone. Income sources are deposits, expense sources withdrawals.
- */
-function edgeClass(source: PlanNode | undefined, target: PlanNode | undefined): string {
-  if (!source) return '';
-  // Explicit checks (not the isIncomeSource guard): the guard's false branch
-  // would narrow away 'variableAmount' and break the expense check below.
-  const incomeLike =
-    source.type === 'income' || (source.type === 'variableAmount' && source.direction === 'income');
-  if (incomeLike) return 'cf-edge-income';
-  if (source.type === 'expense' || source.type === 'variableAmount') return 'cf-edge-expense';
-  // Money leaving the Bank to pay a bill is a withdrawal.
-  if (source.type === 'startingBalance') return 'cf-edge-expense';
-  if (source.type === 'percentageSplit' || source.type === 'prioritySplit' || source.type === 'conditional') {
-    if (!target) return 'cf-edge-logic';
-    if (
-      target.type === 'expense' ||
-      target.type === 'debt' ||
-      (target.type === 'variableAmount' && target.direction !== 'income')
-    ) {
-      return 'cf-edge-expense';
-    }
-    if (
-      target.type === 'goal' ||
-      target.type === 'startingBalance' ||
-      target.type === 'income' ||
-      (target.type === 'variableAmount' && target.direction === 'income')
-    ) {
-      return 'cf-edge-income';
-    }
-    return 'cf-edge-logic';
-  }
-  return '';
-}
+import type { NodeType } from '../engine/types';
 
 export function FlowCanvas() {
   const nodes = useGraphStore((s) => s.nodes);
@@ -209,7 +171,6 @@ export function FlowCanvas() {
   const rfEdges: Edge[] = useMemo(
     () =>
       edges.map((e) => {
-        const src = nodes.find((n) => n.id === e.source);
         const tgt = nodes.find((n) => n.id === e.target);
         const flowing = flowEdgeIds.has(e.id) && !anyDragging;
         return {
@@ -221,7 +182,9 @@ export function FlowCanvas() {
           targetHandle: e.targetHandle,
           data: {
             flowing,
-            tone: edgeClass(src, tgt),
+            // Branches are all one dark grey now; the travelling dots carry
+            // the money meaning (green = stays the player's, red = leaves).
+            dotTone: dotToneForTarget(tgt),
             amountCents: flowAmounts.get(e.id) ?? 0,
           },
           selected: e.id === selectedEdgeId,

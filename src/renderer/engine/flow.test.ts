@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { flowFrames } from './flow';
+import { getTemplate } from '../templates/starterTemplates';
 import { DEFAULT_ASSUMPTIONS } from './types';
 import type {
   Assumptions,
@@ -251,5 +252,29 @@ describe('flowFrames: Bank', () => {
     expect(toBank?.amountCents).toBe(100000);
     expect(toBank?.edgeIds).toEqual(['e1']);
     expect(payday.summary).toMatch(/Paycheck \$1,000 → Checking/);
+  });
+});
+
+describe('flowFrames: starter template', () => {
+  it('payday routes only the savings share; bills pay on their own due dates', () => {
+    // Dates anchor relative to today, so find the payday by its transfer
+    // label instead of a hardcoded date.
+    const g = getTemplate('renter').build();
+    const frames = flowFrames(g, DEFAULT_ASSUMPTIONS);
+    const payday = frames.find((f) =>
+      f.transfers.some((t) => t.label.startsWith('Paycheck →')),
+    );
+    expect(payday).toBeDefined();
+    // The bills share stays in the balance (expenses still hit on their own
+    // schedule), so only the savings share gets a drawn transfer on payday.
+    expect(payday!.transfers.map((t) => t.label)).toEqual([
+      'Paycheck → Paycheck split',
+      '25% → Emergency fund',
+    ]);
+    // A bill pays on its due date through its drawn split edge.
+    const rentDay = frames.find((f) => f.transfers.some((t) => t.label === 'Rent'));
+    expect(rentDay).toBeDefined();
+    expect(rentDay!.transfers).toHaveLength(1);
+    expect(rentDay!.transfers[0].edgeIds).toHaveLength(1);
   });
 });

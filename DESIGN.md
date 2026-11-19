@@ -28,8 +28,10 @@ The theme is [Matcha](https://github.com/lucafalasco/matcha) (dark-only) — one
 --text-muted:    #9AB0A4;
 --income:        #7EB08A;  /* money in — raw matcha green */
 --expense:       #FF819F;  /* money out — raw matcha pink */
---deposit:       #7EB08A;  /* money in: edges + travelling dots */
---withdraw:      #ED1C1C;  /* money out: edges + travelling dots — true red */
+--deposit:       #7EB08A;  /* money staying with the player: travelling dots */
+--withdraw:      #ED1C1C;  /* money leaving the player: travelling dots — true red */
+--focus:         #5EB5A6;  /* green-blue teal — selected-node focus border */
+--edge:          #5D6F76;  /* every branch: one standardized dark grey */
 --accent:        #FF819F;  /* highlights, median line, selection */
 --accent-deep:   #FF819F;
 --warning:       #D2B48C;  /* raw matcha tan — pinch/attention */
@@ -58,7 +60,7 @@ The theme is [Matcha](https://github.com/lucafalasco/matcha) (dark-only) — one
 --sidebar-muted: #9AB0A4;
 ```
 
-Rules: money direction is never color alone — deposits are green, withdrawals true red (`#ED1C1C`), in dots, edges, and chips alike. Below-$0 regions on charts use the danger color; pinch-point markers use warning. Chart gridlines use `--border`; never pure black/white text. All border radii are 3px, including pills and circles.
+Rules: money direction is never color alone. Branches are all one standardized dark grey (`--edge`); the travelling dots carry the money meaning by possession — green while the money stays the player's (into the Bank, a goal, through a split), red once it leaves (`#ED1C1C`, a bill or debt paid). Chips keep their kind colours (green income, red expense/outflow, mauve split, blue balance). Below-$0 regions on charts use the danger color; pinch-point markers use warning. Chart gridlines use `--border`; never pure black/white text. All border radii are 3px, including pills and circles. A selected node shows a green-blue (`--focus`) outline, not pink.
 
 ---
 
@@ -94,7 +96,7 @@ Every node is the **same rectangular card** with a 5px solid left-border accent 
 
 **Flow chips:** during Timelapse playback, each node that moves money shows chips hanging below its bottom border, in rows of 3–4. A chip shows only the charge name; hovering it pops the amount up in a bubble above the chip. Chip borders follow money direction (green deposit, red withdrawal).
 
-Edges: curved (bezier), subtle animation only while a simulation is running; deposit edges green, withdrawal edges true red, logic edges mauve. A flowing edge keeps its direction colour and only gets thicker — it never turns accent pink. Selected edge shows amount flowing. Invalid drop targets highlight red with the rejection reason as a tooltip ("would create a cycle").
+Edges: curved (bezier), all one standardized dark grey, subtle animation only while a simulation is running. A flowing edge only gets thicker — it never turns accent pink. The travelling dots on a flowing edge are green while the money stays the player's and red once it leaves (decided by the target node). Selected edge shows amount flowing. Invalid drop targets highlight red with the rejection reason as a tooltip ("would create a cycle").
 
 **Validation surfacing:** field errors inline in the inspector; a validation count badge sits next to the "Run forecast" button; clicking it navigates to the offending node/field (RESEARCH.md §3).
 

@@ -13,8 +13,10 @@
   --text-muted: #9ab0a4;
   --income: #7eb08a;        /* raw matcha green */
   --expense: #ff819f;       /* raw matcha pink — money out */
-  --deposit: #7eb08a;       /* money in: edges + travelling dots */
-  --withdraw: #ed1c1c;      /* money out: edges + travelling dots — true red */
+  --deposit: #7eb08a;       /* money staying with the player: travelling dots */
+  --withdraw: #ed1c1c;      /* money leaving the player: travelling dots — true red */
+  --focus: #5eb5a6;         /* green-blue teal — selected-node focus border */
+  --edge: #5d6f76;          /* every branch: one standardized dark grey */
   --accent: #ff819f;
   --accent-deep: #ff819f;
   --warning: #d2b48c;       /* raw matcha tan */
@@ -106,15 +108,14 @@ input[type="range"] {
 .cf-canvas .react-flow__controls-button:hover {
   background: var(--surface-2);
 }
-/* Edge tone is money direction: deposits green, withdrawals red.
-   React Flow paints the path from --xy-edge-stroke (its own rule sets
-   stroke on .react-flow__edge-path, so a plain `stroke` on the wrapping
-   <g> never reaches the path — the variable inherits down to it instead). */
-.cf-edge-income { --xy-edge-stroke: var(--deposit); }
-.cf-edge-expense { --xy-edge-stroke: var(--withdraw); }
-.cf-edge-logic { --xy-edge-stroke: var(--node-logic); }
+/* Every branch is one standardized dark grey. Money direction is carried
+   by the travelling dots now, not the branch colour. React Flow paints the
+   path from --xy-edge-stroke (its own rule sets stroke on
+   .react-flow__edge-path, so a plain `stroke` on the wrapping <g> never
+   reaches the path — the variable inherits down to it instead). */
+.cf-canvas { --xy-edge-stroke: var(--edge); }
 .cf-canvas .react-flow__edge.selected .react-flow__edge-path {
-  stroke: var(--accent);
+  stroke: var(--edge);
   stroke-width: 2.5;
 }
 
@@ -133,7 +134,7 @@ input[type="range"] {
   flex-direction: column;
 }
 .cf-node.selected {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 /* Scenario-excluded nodes: dimmed + dashed (shape + opacity, never color alone). */
@@ -221,23 +222,21 @@ input[type="range"] {
 .cf-node-debt .cf-node-icon { color: var(--node-debt); }
 
 /* Timelapse money-flow: an edge carrying money gets thicker and its dots
-   travel — but it keeps its direction colour (red withdrawal / green
-   deposit) instead of turning accent pink, so a branch reads the same
-   colour playing as it does at rest. */
+   travel — but the branch stays the same dark grey playing as at rest. */
 .cf-edge-flow .react-flow__edge-path,
 .react-flow__edge-path.cf-edge-flow {
   stroke-width: 3;
 }
-/* Travelling money dots follow the edge direction: deposits green,
-   withdrawals red. Logic edges (split to split/conditional) stay amber. */
+/* Travelling money dots follow possession, not branch colour: green while
+   the money stays the player's (into the Bank, a goal, through a split),
+   red once it leaves (a bill paid, a debt paid). */
 .cf-money-dot {
-  fill: var(--accent);
+  fill: var(--deposit);
   stroke: var(--surface);
   stroke-width: 2;
 }
-.cf-edge-income .cf-money-dot { fill: var(--deposit); }
-.cf-edge-expense .cf-money-dot { fill: var(--withdraw); }
-.cf-edge-logic .cf-money-dot { fill: var(--amber); }
+.cf-dot-kept .cf-money-dot { fill: var(--deposit); }
+.cf-dot-spent .cf-money-dot { fill: var(--withdraw); }
 
 /* The multi-selection rectangle is visual only: with pointer-events it swallows
    clicks on the nodes inside a group, so a group can never be collapsed by
@@ -312,10 +311,11 @@ input[type="range"] {
 .cf-flow-chip.split { color: var(--node-logic); }
 .cf-flow-chip.balance { color: var(--node-balance); }
 .cf-flow-chip.outflow { color: var(--withdraw); }
-/* virtual timelapse route for money with no drawn edge (bill payments —
-   money out, so the withdrawal red) */
+/* virtual timelapse route for money with no drawn edge (bill payments) —
+   a branch like any other, so the same dark grey; its dots stay red
+   (money leaving) via the cf-dot-spent wrapper */
 .cf-virtual-path {
-  stroke: var(--withdraw);
+  stroke: var(--edge);
   stroke-width: 2;
   stroke-dasharray: 6 5;
   opacity: 0.55;
