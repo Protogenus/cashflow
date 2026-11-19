@@ -213,11 +213,9 @@ input[type="range"] {
   margin: 0;
   text-align: right;
   font-weight: 600;
-  color: var(--text);
+  color: var(--text-muted);
   min-width: 0;
 }
-.cf-node-stat dd.cf-tone-in { color: var(--deposit); }
-.cf-node-stat dd.cf-tone-out { color: var(--withdraw); }
 .cf-node-note {
   margin-top: 4px;
   color: var(--text-muted);

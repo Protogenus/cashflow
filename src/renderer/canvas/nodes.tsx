@@ -47,8 +47,8 @@ function Label({ node }: { node: PlanNode }) {
 
 /**
  * Node facts as labelled rows — one fact per row, label left, value right,
- * hairline between rows — instead of a run-on paragraph. The value's tone
- * is money direction only (green in, red out); labels stay muted.
+ * hairline between rows — instead of a run-on paragraph. Both label and
+ * value stay the old muted status colour; the row layout does the work.
  */
 function Status({ status }: { status: CardStatus }) {
   return (
@@ -57,7 +57,7 @@ function Status({ status }: { status: CardStatus }) {
         {status.chunks.map((c) => (
           <div className="cf-node-stat" key={c.label}>
             <dt>{c.label}</dt>
-            <dd className={`money${c.tone ? ` cf-tone-${c.tone}` : ''}`}>{c.value}</dd>
+            <dd className="money">{c.value}</dd>
           </div>
         ))}
       </dl>

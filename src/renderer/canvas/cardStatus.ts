@@ -21,12 +21,10 @@ import {
 } from '../engine';
 import { formatDateShort, formatMoney } from '../lib/format';
 
-/** One labelled fact on a node card. `tone` colours the value only:
- * money in green, money out red, everything else the default text. */
+/** One labelled fact on a node card. */
 export interface StatChunk {
   label: string;
   value: string;
-  tone?: 'in' | 'out';
 }
 
 export interface CardStatus {
@@ -55,7 +53,7 @@ export function cardStatus(graph: PlanGraph, node: PlanNode): CardStatus {
         primary: `${formatMoney(node.amountCents)} · ${describeFrequency(node.recurrence).split(' · ')[0]}`,
         secondary: next ? `next: ${formatDateShort(next)}` : 'no upcoming dates',
         chunks: [
-          { label: 'Amount', value: formatMoney(node.amountCents), tone: 'in' },
+          { label: 'Amount', value: formatMoney(node.amountCents) },
           { label: 'Every', value: describeFrequency(node.recurrence).split(' · ')[0] },
           { label: 'Next', value: next ? formatDateShort(next) : 'No upcoming dates' },
         ],
@@ -67,7 +65,7 @@ export function cardStatus(graph: PlanGraph, node: PlanNode): CardStatus {
         primary: `${formatMoney(node.amountCents)} · ${describeFrequency(node.recurrence).split(' · ')[0]}`,
         secondary: next ? `due: ${formatDateShort(next)}` : 'no upcoming dates',
         chunks: [
-          { label: 'Amount', value: formatMoney(node.amountCents), tone: 'out' },
+          { label: 'Amount', value: formatMoney(node.amountCents) },
           { label: 'Every', value: describeFrequency(node.recurrence).split(' · ')[0] },
           { label: 'Due', value: next ? formatDateShort(next) : 'No upcoming dates' },
         ],
@@ -76,15 +74,14 @@ export function cardStatus(graph: PlanGraph, node: PlanNode): CardStatus {
     case 'variableAmount': {
       const next = nextOccurrenceDate(node.recurrence, today);
       const dir = node.direction === 'income' ? 'in' : 'out';
-      const tone = node.direction === 'income' ? 'in' : 'out';
       return {
         primary: `${dir} · min ${formatMoney(node.minCents)} · typ ${formatMoney(node.typicalCents)} · max ${formatMoney(node.maxCents)}`,
         secondary: next ? `next: ${formatDateShort(next)}` : 'no upcoming dates',
         chunks: [
-          { label: 'Direction', value: node.direction === 'income' ? 'Money in' : 'Money out', tone },
-          { label: 'Minimum', value: formatMoney(node.minCents), tone },
-          { label: 'Typical', value: formatMoney(node.typicalCents), tone },
-          { label: 'Maximum', value: formatMoney(node.maxCents), tone },
+          { label: 'Direction', value: node.direction === 'income' ? 'Money in' : 'Money out' },
+          { label: 'Minimum', value: formatMoney(node.minCents) },
+          { label: 'Typical', value: formatMoney(node.typicalCents) },
+          { label: 'Maximum', value: formatMoney(node.maxCents) },
           { label: 'Next', value: next ? formatDateShort(next) : 'No upcoming dates' },
         ],
       };
@@ -129,7 +126,7 @@ export function cardStatus(graph: PlanGraph, node: PlanNode): CardStatus {
         primary: `${formatMoney(node.targetCents)} target`,
         secondary: `by ${formatDateShort(node.targetDate)}`,
         chunks: [
-          { label: 'Target', value: formatMoney(node.targetCents), tone: 'in' },
+          { label: 'Target', value: formatMoney(node.targetCents) },
           { label: 'By', value: formatDateShort(node.targetDate) },
         ],
       };
@@ -139,9 +136,9 @@ export function cardStatus(graph: PlanGraph, node: PlanNode): CardStatus {
         primary: `${formatMoney(node.balanceCents)} · ${(node.aprBps / 100).toFixed(2)}% APR`,
         secondary: payoff ? `payoff ~${formatDateShort(payoff.payoffDate)}` : 'min payment never clears it',
         chunks: [
-          { label: 'Balance owed', value: formatMoney(node.balanceCents), tone: 'out' },
+          { label: 'Balance owed', value: formatMoney(node.balanceCents) },
           { label: 'APR', value: `${(node.aprBps / 100).toFixed(2)}%` },
-          { label: 'Payoff', value: payoff ? `~${formatDateShort(payoff.payoffDate)}` : 'Min payment never clears it', tone: payoff ? undefined : 'out' },
+          { label: 'Payoff', value: payoff ? `~${formatDateShort(payoff.payoffDate)}` : 'Min payment never clears it' },
         ],
       };
     }
