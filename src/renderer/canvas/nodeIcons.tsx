@@ -1,4 +1,4 @@
-/** canvas/nodeIcons.tsx — inline SVG icons (shape+color+icon redundant encoding). */
+/** canvas/nodeIcons.tsx — inline Lucide icons, supplied by Blake 2026-11-19. */
 import type { NodeType } from '../engine/types';
 
 function Svg({ children }: { children: React.ReactNode }) {
@@ -13,22 +13,31 @@ function Svg({ children }: { children: React.ReactNode }) {
 export function NodeIcon({ type }: { type: NodeType }) {
   switch (type) {
     case 'startingBalance':
-      return <Svg><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20M6 15h4"/></Svg>;
+      // lucide-circle-dollar-sign
+      return <Svg><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></Svg>;
     case 'income':
-      return <Svg><path d="M12 3v10m0 0l-4-4m4 4l4-4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></Svg>;
+      // lucide-banknote-check
+      return <Svg><path d="M11.748 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4.875"/><path d="m16 19 2 2 4-4"/><path d="M18 12h.01"/><path d="M6 12h.01"/><circle cx="12" cy="12" r="2"/></Svg>;
     case 'expense':
-      return <Svg><path d="M12 13V3m0 0L8 7m4-4l4 4"/><path d="M4 15v4a1 1 0 001 1h14a1 1 0 001-1v-4"/></Svg>;
+      // lucide-banknote-arrow-down
+      return <Svg><path d="M12 18H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5"/><path d="m16 19 3 3 3-3"/><path d="M18 12h.01"/><path d="M19 16v6"/><path d="M6 12h.01"/><circle cx="12" cy="12" r="2"/></Svg>;
     case 'variableAmount':
-      return <Svg><path d="M2 12c2.5 0 2.5-6 5-6s2.5 12 5 12 2.5-6 5-6 2.5 6 5 6"/></Svg>;
+      // lucide-trending-up-down
+      return <Svg><path d="M14.828 14.828 21 21"/><path d="M21 16v5h-5"/><path d="m21 3-9 9-4-4-6 6"/><path d="M21 8V3h-5"/></Svg>;
     case 'percentageSplit':
-      return <Svg><path d="M12 3v9h9"/><path d="M21.5 12.5A9 9 0 112.6 8.2"/></Svg>;
+      // lucide-square-percent
+      return <Svg><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m15 9-6 6"/><path d="M9 9h.01"/><path d="M15 15h.01"/></Svg>;
     case 'prioritySplit':
-      return <Svg><path d="M4 6h16M4 12h16M4 18h10"/></Svg>;
+      // lucide-star-plus
+      return <Svg><path d="M11.013 18.582 6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16l2.309-4.679a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904L20 11.5"/><path d="M15 18h6"/><path d="M18 15v6"/></Svg>;
     case 'conditional':
-      return <Svg><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8 7l7.5 4M8 17l7.5-4"/></Svg>;
+      // lucide-scroll-text
+      return <Svg><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></Svg>;
     case 'goal':
-      return <Svg><path d="M5 21V4"/><path d="M5 4h13l-3 4 3 4H5"/></Svg>;
+      // lucide-goal
+      return <Svg><path d="M12 13V2l8 4-8 4"/><path d="M20.561 10.222a9 9 0 1 1-12.55-5.29"/><path d="M8.002 9.997a5 5 0 1 0 8.9 2.02"/></Svg>;
     case 'debt':
-      return <Svg><path d="M10 14a5 5 0 007 0l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 10a5 5 0 00-7 0l-3 3a5 5 0 007 7l1.5-1.5"/></Svg>;
+      // lucide-goal — the icon Blake supplied for debt is the same as the goal one
+      return <Svg><path d="M12 13V2l8 4-8 4"/><path d="M20.561 10.222a9 9 0 1 1-12.55-5.29"/><path d="M8.002 9.997a5 5 0 1 0 8.9 2.02"/></Svg>;
   }
 }

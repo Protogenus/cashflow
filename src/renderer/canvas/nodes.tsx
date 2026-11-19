@@ -1,7 +1,7 @@
 /**
  * canvas/nodes.tsx — the 9 custom React Flow node components.
- * Visual language per DESIGN.md §4: every type is distinct by shape + color
- * + icon (redundant encoding, never color alone). Cards show live computed
+ * Visual language: every node is the same card with a left-border accent
+ * in the type's colour, plus a distinct icon. Cards show live computed
  * status from the engine (cardStatus.ts).
  */
 import { Handle, Position } from '@xyflow/react';
@@ -85,6 +85,12 @@ function pulseName(pulse: NonNullable<CFNodeData['flowPulses']>[number]): string
   return pulse.kind.charAt(0).toUpperCase() + pulse.kind.slice(1);
 }
 
+/**
+ * A flow chip shows only the charge name. The amount is a hover bubble
+ * above the chip (CSS), so the strip stays compact and fits 3–4 chips
+ * per row. Chips take pointer events so the hover works; the container
+ * doesn't, so the gaps between chips still pass drags to the canvas.
+ */
 function FlowChip({ pulse }: { pulse: NonNullable<CFNodeData['flowPulses']>[number] }) {
   const isBalance = pulse.kind === 'balance';
   const sign = pulse.amountCents < 0 ? '−' : isBalance ? '' : '+';
@@ -110,13 +116,15 @@ function FlowChips({ pulses }: { pulses: NonNullable<CFNodeData['flowPulses']> }
   );
 }
 
-/** Rectangular card shell (balance / income / expense / variable / goal / debt / splits). */
+/**
+ * Rectangular card shell for every node type. One style for all nodes:
+ * the same card, the same left-border accent in the type's colour. No
+ * per-type shapes — no chevrons, no flag tab, no debt notch, no hexagon.
+ */
 function RectShell({
-  data, selected, className, chevron, flagTab, handles, outputs,
+  data, selected, className, handles, outputs,
 }: NodeProps & {
   className: string;
-  chevron?: boolean;
-  flagTab?: boolean;
   handles?: React.ReactNode;
   outputs?: { id: string; label: string }[];
 }) {
@@ -124,8 +132,6 @@ function RectShell({
   const n = outputs?.length ?? 0;
   return (
     <div className={`cf-node ${className}${selected ? ' selected' : ''}${disabled ? ' cf-node-disabled' : ''}`} title={node.label}>
-      {chevron && <span className="cf-edge-chevron" aria-hidden="true" />}
-      {flagTab && <span className="cf-flag-tab" aria-hidden="true" />}
       {orphaned && <OrphanBadge />}
       <Label node={node} />
       <Status status={status} />
@@ -166,13 +172,13 @@ export function StartingBalanceNode(props: NodeProps) {
 
 export function IncomeNode(props: NodeProps) {
   return (
-    <RectShell {...props} className="cf-node-income" chevron handles={<OutRight />} />
+    <RectShell {...props} className="cf-node-income" handles={<OutRight />} />
   );
 }
 
 export function ExpenseNode(props: NodeProps) {
   return (
-    <RectShell {...props} className="cf-node-expense" chevron handles={<InLeft />} />
+    <RectShell {...props} className="cf-node-expense" handles={<InLeft />} />
   );
 }
 
@@ -184,7 +190,7 @@ export function VariableAmountNode(props: NodeProps) {
 
 export function GoalNode(props: NodeProps) {
   return (
-    <RectShell {...props} className="cf-node-goal" flagTab handles={<InLeft />} />
+    <RectShell {...props} className="cf-node-goal" handles={<InLeft />} />
   );
 }
 
@@ -215,26 +221,11 @@ export function PrioritySplitNode(props: NodeProps) {
 }
 
 export function ConditionalNode(props: NodeProps) {
-  const { node, status, orphaned } = props.data;
-  const { selected } = props;
-  return (
-    <div className={`cf-hex-wrap${selected ? ' selected' : ''}`} title={node.label}>
-      {orphaned && <OrphanBadge />}
-      <div className="cf-hex-border" aria-hidden="true" />
-      <div className="cf-hex">
-        <div className="cf-node-label">
-          <span className="cf-node-icon">
-            <NodeIcon type={node.type} />
-          </span>
-          <span>{node.label}</span>
-        </div>
-        <Status status={status} />
-      </div>
-      <Handle type="target" position={Position.Left} id="in" style={{ top: '50%' }} aria-label="input" />
-      <Handle type="source" position={Position.Right} id="true" style={{ top: '32%' }} aria-label="true output" title="true" />
-      <Handle type="source" position={Position.Right} id="false" style={{ top: '68%' }} aria-label="false output" title="false" />
-    </div>
-  );
+  const node = props.data.node;
+  const outputs = node.type === 'conditional'
+    ? [{ id: 'true', label: node.trueLabel }, { id: 'false', label: node.falseLabel }]
+    : [];
+  return <RectShell {...props} className="cf-node-conditional" outputs={outputs} />;
 }
 
 /** Maps engine NodeType -> React Flow custom component. */

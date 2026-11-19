@@ -33,8 +33,8 @@
   --node-balance: #5e8a99;  /* darkened matcha blue */
   --node-logic: #96698c;    /* darkened matcha mauve (splits + conditional) */
   --node-goal: #4e7d5b;     /* darkened matcha green */
-  --node-debt: #ed1c1c;     /* debt — true red, per spec */
-  --node-expense: #d95d00;  /* expense node accent — orange, per spec */
+  --node-debt: #d95d00;     /* debt — orange, per spec */
+  --node-expense: #ed1c1c;  /* expense node accent — red, per spec */
   --node-variable: #8a6d2b; /* darkened tan */
   --on-accent: #d1ded3;
   /* dark sidebar (the left node rail) — dark in both themes */
@@ -45,10 +45,10 @@
   /* per-type icon colors tuned for the dark sidebar — raw Matcha hexes */
   --sb-balance: #7ea4b0;
   --sb-income: #7eb08a;
-  --sb-expense: #ff8a3d;
+  --sb-expense: #ed1c1c;
   --sb-logic: #ba8eaf;
   --sb-goal: #7eb08a;
-  --sb-debt: #ed1c1c;
+  --sb-debt: #ff8a3d;
   --sb-variable: #d2b48c;
   --radius-card: 3px;
   --radius-input: 3px;
@@ -81,8 +81,8 @@
   --node-balance: #7ea4b0;
   --node-logic: #ba8eaf;    /* raw matcha mauve */
   --node-goal: #7eb08a;
-  --node-debt: #ed1c1c;     /* debt — true red, per spec */
-  --node-expense: #ff8a3d;  /* expense node accent — orange, per spec */
+  --node-debt: #ff8a3d;     /* debt — orange, per spec */
+  --node-expense: #ed1c1c;  /* expense node accent — red, per spec */
   --node-variable: #d2b48c;
   --on-accent: #273136;
   --sidebar: #1e2629;
@@ -229,33 +229,31 @@ input[type="range"] {
   display: inline-flex;
 }
 
-/* shape/color accents per type */
-.cf-node-balance   { border-left: 5px double var(--node-balance); }
+/* One style for every node: the same card, a left-border accent in the
+   type's colour, and a distinct icon. No per-type shapes. */
+.cf-node-balance   { border-left: 5px solid var(--node-balance); }
 .cf-node-balance .cf-node-icon { color: var(--node-balance); }
 
 .cf-node-income    { border-left: 5px solid var(--income); }
 .cf-node-income .cf-node-icon { color: var(--income); }
-.cf-node-income .cf-edge-chevron {
-  position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
-  width: 0; height: 0;
-  border-left: 7px solid transparent; border-right: 7px solid transparent;
-  border-bottom: 10px solid var(--income); /* up chevron = money in */
-}
 
 .cf-node-expense   { border-left: 5px solid var(--node-expense); }
 .cf-node-expense .cf-node-icon { color: var(--node-expense); }
-.cf-node-expense .cf-edge-chevron {
-  position: absolute; left: -9px; top: 50%; transform: translateY(-50%);
-  width: 0; height: 0;
-  border-left: 7px solid transparent; border-right: 7px solid transparent;
-  border-top: 10px solid var(--node-expense); /* down chevron = money out */
-}
 
-.cf-node-variable  { border: 1.5px dashed var(--node-variable); }
+.cf-node-variable  { border-left: 5px solid var(--node-variable); }
 .cf-node-variable .cf-node-icon { color: var(--node-variable); }
 
 .cf-node-split    { border-left: 5px solid var(--node-logic); }
 .cf-node-split .cf-node-icon { color: var(--node-logic); }
+
+.cf-node-conditional    { border-left: 5px solid var(--node-logic); }
+.cf-node-conditional .cf-node-icon { color: var(--node-logic); }
+
+.cf-node-goal      { border-left: 5px solid var(--node-goal); }
+.cf-node-goal .cf-node-icon { color: var(--node-goal); }
+
+.cf-node-debt      { border-left: 5px solid var(--node-debt); }
+.cf-node-debt .cf-node-icon { color: var(--node-debt); }
 
 /* Timelapse money-flow: an edge carrying money gets thicker and its dots
    travel — but it keeps its direction colour (red withdrawal / green
@@ -283,48 +281,66 @@ input[type="range"] {
   pointer-events: none !important;
 }
 
-/* Flow chips attach to the OUTSIDE of their parent node's bottom border,
-   in rows of 2–3 chips (name on top, amount below) across the full width
-   of the card. Absolute positioning keeps them out of the node's measured
-   size, so they never stretch the card or move its handles — they hang
-   below the border the way the 2026-11-04 straddle did. */
+/* Flow chips attach to the OUTSIDE of their parent node's bottom border.
+   Each chip shows only the charge name, so 3–4 fit per row; the strip is
+   wider than the card (24px overhang each side, rows centred) to make
+   room. Hovering a chip pops the amount up in a small bubble above it.
+   Absolute positioning keeps the strip out of the node's measured size,
+   so it never stretches the card or moves its handles. */
 .cf-flow-chips {
   position: absolute;
   top: 100%;
-  left: 0;
-  width: 100%;
+  left: -24px;
+  width: calc(100% + 48px);
   z-index: 6;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: flex-start;
   gap: 4px;
   pointer-events: none;
   margin-top: 5px;
 }
 .cf-flow-chip {
+  position: relative;
   display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   font-size: 11px;
   line-height: 1.3;
-  padding: 3px 8px;
+  padding: 2px 7px;
   border-radius: 3px;
   background: var(--surface);
   border: 1.5px solid currentColor;
   white-space: nowrap;
   box-shadow: var(--shadow-card);
   animation: cf-flow-pop 0.25s ease-out;
-  pointer-events: none;
+  pointer-events: auto;
 }
-/* Charge name on top, amount below — the name is what the eye reads first. */
+/* Charge name only, until hovered. */
 .cf-flow-chip .cf-flow-name {
   font-weight: 600;
   font-size: 11px;
 }
+/* Amount: hidden until hover, then a bubble above the chip — no reflow. */
 .cf-flow-chip .cf-flow-amount {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 3px;
+  background: var(--text);
+  color: var(--bg);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-card);
+  z-index: 7;
+}
+.cf-flow-chip:hover .cf-flow-amount {
+  display: block;
 }
 .cf-flow-chip.income { color: var(--deposit); }
 .cf-flow-chip.expense { color: var(--withdraw); }
@@ -343,55 +359,6 @@ input[type="range"] {
   from { transform: scale(0.5); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
-
-.cf-node-goal      { border-top: 5px solid var(--node-goal); border-radius: 3px; }
-.cf-node-goal .cf-node-icon { color: var(--node-goal); }
-.cf-node-goal .cf-flag-tab {
-  position: absolute; top: -11px; left: 12px;
-  width: 26px; height: 8px; background: var(--node-goal);
-  border-radius: 3px 3px 0 0;
-}
-
-.cf-node-debt {
-  border: 1.5px solid var(--node-debt);
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%); /* notched corner — clip-path dominates the radius here */
-  border-radius: 3px;
-  padding-right: 20px;
-}
-.cf-node-debt .cf-node-icon { color: var(--node-debt); }
-
-/* hexagon (conditional) needs a transform wrapper so handles stay put */
-
-.cf-hex-wrap { width: 190px; height: 124px; position: relative; }
-.cf-hex-border {
-  position: absolute; inset: 0;
-  background: var(--node-logic);
-  clip-path: polygon(24% 0, 76% 0, 100% 50%, 76% 100%, 24% 100%, 0 50%);
-}
-.cf-hex {
-  position: absolute; inset: 2px;
-  background: var(--surface);
-  clip-path: polygon(24% 0, 76% 0, 100% 50%, 76% 100%, 24% 100%, 0 50%);
-  display: flex; flex-direction: column; justify-content: center; align-items: center;
-  font-size: 11px; color: var(--text); text-align: center; padding: 0 30px;
-}
-.cf-hex .cf-node-icon { color: var(--node-logic); }
-/* Hexagons are narrow: stack each fact (label above value, centered)
-   instead of the side-by-side rows rectangular cards use. */
-.cf-hex .cf-node-stats {
-  width: 100%;
-  margin-top: 2px;
-}
-.cf-hex .cf-node-stat {
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  padding: 1px 0;
-  font-size: 10px;
-  border-top: none;
-}
-.cf-hex .cf-node-stat dd { text-align: center; }
-.cf-hex-wrap.selected .cf-hex-border { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .cf-orphan-badge {
   position: absolute; top: -9px; right: -9px; z-index: 5;
